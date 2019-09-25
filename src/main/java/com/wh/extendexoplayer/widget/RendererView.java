@@ -104,7 +104,7 @@ public interface RendererView {
 
         void setVideoComponent(Player.VideoComponent newVideoComponent);
 
-        default void addOnVideoSizeChangedListener(MediaPlayer.OnVideoSizeChangedListener listener){}
+        void addOnVideoSizeChangedListener(MediaPlayer.OnVideoSizeChangedListener listener);
     }
 
     interface OnSingleTapListener {

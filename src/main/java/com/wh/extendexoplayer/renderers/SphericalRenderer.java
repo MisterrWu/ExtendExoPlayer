@@ -2,6 +2,7 @@ package com.wh.extendexoplayer.renderers;
 
 import android.graphics.PointF;
 import android.graphics.SurfaceTexture;
+import android.media.MediaPlayer;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 import android.view.GestureDetector;
@@ -107,6 +108,11 @@ public class SphericalRenderer extends BaseRenderer implements RendererView.Rend
 
         Matrix.multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
         scene.drawFrame(viewProjectionMatrix, /* rightEye= */ false);
+    }
+
+    @Override
+    public void addOnVideoSizeChangedListener(MediaPlayer.OnVideoSizeChangedListener listener) {
+
     }
 
     @Override

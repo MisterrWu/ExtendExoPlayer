@@ -33,14 +33,17 @@ public abstract class BaseRenderer implements RendererView.Renderer {
     @Override
     public void onDetachedFromWindow() {
         mainHandler.post(
-                () -> {
-                    if (surface != null) {
-                        if (videoComponent != null) {
-                            videoComponent.clearVideoSurface(surface);
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        if (surface != null) {
+                            if (videoComponent != null) {
+                                videoComponent.clearVideoSurface(surface);
+                            }
+                            releaseSurface(surfaceTexture, surface);
+                            surfaceTexture = null;
+                            surface = null;
                         }
-                        releaseSurface(surfaceTexture, surface);
-                        surfaceTexture = null;
-                        surface = null;
                     }
                 });
     }
@@ -80,17 +83,20 @@ public abstract class BaseRenderer implements RendererView.Renderer {
     }
 
     // Called on GL thread.
-    private void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture) {
+    private void onSurfaceTextureAvailable(final SurfaceTexture surfaceTexture) {
         mainHandler.post(
-                () -> {
-                    SurfaceTexture oldSurfaceTexture = this.surfaceTexture;
-                    Surface oldSurface = this.surface;
-                    this.surfaceTexture = surfaceTexture;
-                    this.surface = new Surface(surfaceTexture);
-                    if (videoComponent != null) {
-                        videoComponent.setVideoSurface(surface);
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        SurfaceTexture oldSurfaceTexture = BaseRenderer.this.surfaceTexture;
+                        Surface oldSurface = BaseRenderer.this.surface;
+                        BaseRenderer.this.surfaceTexture = surfaceTexture;
+                        BaseRenderer.this.surface = new Surface(surfaceTexture);
+                        if (videoComponent != null) {
+                            videoComponent.setVideoSurface(surface);
+                        }
+                        releaseSurface(oldSurfaceTexture, oldSurface);
                     }
-                    releaseSurface(oldSurfaceTexture, oldSurface);
                 });
     }
 }

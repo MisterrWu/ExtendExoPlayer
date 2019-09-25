@@ -78,7 +78,12 @@ public final class SceneRenderer implements VideoFrameMetadataListener, CameraMo
 
         textureId = GlUtil.createExternalTexture();
         surfaceTexture = new SurfaceTexture(textureId);
-        surfaceTexture.setOnFrameAvailableListener(surfaceTexture -> frameAvailable.set(true));
+        surfaceTexture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
+            @Override
+            public void onFrameAvailable(SurfaceTexture surfaceTexture) {
+                frameAvailable.set(true);
+            }
+        });
         return surfaceTexture;
     }
 
