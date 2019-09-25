@@ -1,30 +1,27 @@
-apply plugin: 'com.android.library'
-apply plugin: 'com.github.dcendents.android-maven'
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
 
-android {
-    compileSdkVersion 28
-
-    defaultConfig {
-        minSdkVersion 18
-        targetSdkVersion 28
-        versionCode 1
-        versionName "1.0.0"
+buildscript {
+    
+    repositories {
+        google()
+        jcenter()
     }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.2.0'
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
 
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
     }
 }
 
-dependencies {
-    api fileTree(dir: 'libs', include: ['*.jar'])
-
-    api('com.google.android.exoplayer:exoplayer-core:2.10.3') {
-        exclude group: 'androidx.annotation', module: 'annotation'
+allprojects {
+    repositories {
+        google()
+        jcenter()
     }
 }
 
-apply from: 'https://raw.githubusercontent.com/Commit451/gradle-android-javadocs/1.0.0/gradle-android-javadocs.gradle'
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
