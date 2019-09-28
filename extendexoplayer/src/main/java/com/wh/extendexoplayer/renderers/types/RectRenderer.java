@@ -96,7 +96,7 @@ public final class RectRenderer implements VideoListener {
     };
 
     // 矩阵
-    private final RectTools rectTools;
+    private final MatrixTools matrixTools;
     private final float[] mSTMatrix = new float[16];
 
     private boolean isFitXY = false;
@@ -104,8 +104,8 @@ public final class RectRenderer implements VideoListener {
     public RectRenderer(boolean fitXY) {
         isFitXY = fitXY;
         frameAvailable = new AtomicBoolean();
-        rectTools = new RectTools();
-        rectTools.pushMatrix();
+        matrixTools = new MatrixTools();
+        matrixTools.pushMatrix();
         vertexBuffer = ByteBuffer.allocateDirect(vertexData.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer()
@@ -117,6 +117,10 @@ public final class RectRenderer implements VideoListener {
                 .asFloatBuffer()
                 .put(textureVertexData);
         textureVertexBuffer.position(0);
+    }
+
+    public boolean frameAvailable() {
+        return frameAvailable.get();
     }
 
     public SurfaceTexture init() {
@@ -149,7 +153,7 @@ public final class RectRenderer implements VideoListener {
         GLES20.glViewport(0, 0, width, height);
         float aspect = (float) width / height;
         float fovY = calculateFieldOfViewInYDirection(aspect);
-        rectTools.perspective(0, fovY, aspect, Z_NEAR, Z_FAR);
+        matrixTools.perspective(0, fovY, aspect, Z_NEAR, Z_FAR);
         updateProjection();
     }
 
@@ -178,7 +182,7 @@ public final class RectRenderer implements VideoListener {
         }
 
         GLES20.glUseProgram(program);
-        GLES20.glUniformMatrix4fv(uMatrixHandle, 1, false, rectTools.getFinalMatrix(), 0);
+        GLES20.glUniformMatrix4fv(uMatrixHandle, 1, false, matrixTools.getFinalMatrix(), 0);
         GLES20.glUniformMatrix4fv(uSTMatrixHandle, 1, false, mSTMatrix, 0);
 
         vertexBuffer.position(0);
@@ -216,14 +220,14 @@ public final class RectRenderer implements VideoListener {
 
     private synchronized void updateProjection() {
         if (isFitXY) {
-            rectTools.ortho(-1f, 1f, -1, 1, -1f, 1);
+            matrixTools.ortho(-1f, 1f, -1, 1, -1f, 1);
         } else {
             float screenRatio = (float) surfaceWidth / surfaceHeight;
             float videoRatio = (float) videoWidth / videoHeight;
             if (videoRatio > screenRatio) {
-                rectTools.ortho(-1f, 1f, -videoRatio / screenRatio, videoRatio / screenRatio, -1f, 10);
+                matrixTools.ortho(-1f, 1f, -videoRatio / screenRatio, videoRatio / screenRatio, -1f, 10);
             } else {
-                rectTools.ortho(-screenRatio / videoRatio, screenRatio / videoRatio, -1f, 1f, -1f, 10);
+                matrixTools.ortho(-screenRatio / videoRatio, screenRatio / videoRatio, -1f, 1f, -1f, 10);
             }
         }
     }
@@ -247,17 +251,17 @@ public final class RectRenderer implements VideoListener {
     public void setVideoMatrix(android.graphics.Matrix matrix) {
         float[] values = new float[9];
         matrix.getValues(values);
-        logMatrix("setVideoMatrix", values);
+        //logMatrix("setVideoMatrix", values);
         float scale = (float) Math.sqrt((float) Math.pow(values[android.graphics.Matrix.MSCALE_X], 2) + (float) Math.pow(values[android.graphics.Matrix.MSKEW_Y], 2));
-        rectTools.peekMatrix();
-        rectTools.scale(scale, scale, 0, false);
+        matrixTools.peekMatrix();
+        matrixTools.scale(scale, scale, 0, false);
         float transX = values[android.graphics.Matrix.MTRANS_X];
         float transY = values[android.graphics.Matrix.MTRANS_Y];
         float x = (transX + (surfaceWidth * scale - surfaceWidth) / 2) / surfaceWidth;
         float y = (transY + (surfaceHeight * scale - surfaceHeight)/2) / surfaceHeight;
         Log.e(TAG, "setVideoMatrix: x " + x +",y "+y);
         // x 为负数向左，y 为负数向下
-        rectTools.translate(x / 2,-y / 2,0,true);
+        matrixTools.translate(x / 2,-y / 2,0,true);
     }
 
     private void logMatrix(String name, float[] values) {
@@ -275,89 +279,10 @@ public final class RectRenderer implements VideoListener {
     }
 
     public void setScale(float scale, boolean shoLog) {
-        rectTools.scale(scale, scale, 0, shoLog);
+        matrixTools.scale(scale, scale, 0, shoLog);
     }
 
     public void setTranslate(float transX, float transY, boolean shoLog){
-        rectTools.translate(transX,transY,0,shoLog);
-    }
-
-    private class RectTools {
-
-        private float[] mMatrixProjection = new float[16];    //投影矩阵
-        private float[] mMatrixTransform =     //原始矩阵
-                {1, 0, 0, 0,
-                        0, 1, 0, 0,
-                        0, 0, 1, 0,
-                        0, 0, 0, 1};
-
-        private Stack<float[]> mStack;      //变换矩阵堆栈
-
-        RectTools() {
-            mStack = new Stack<>();
-        }
-
-        //保护现场
-        void pushMatrix() {
-            mStack.push(Arrays.copyOf(mMatrixTransform, 16));
-        }
-
-        //恢复现场
-        public void popMatrix() {
-            mMatrixTransform = mStack.pop();
-        }
-
-        void peekMatrix() {
-            float[] values = mStack.peek();
-            mMatrixTransform = Arrays.copyOf(values, values.length);
-        }
-
-        public void clearStack() {
-            mStack.clear();
-        }
-
-        //平移变换
-        public void translate(float x, float y, float z, boolean showLog) {
-            Matrix.translateM(mMatrixTransform, 0, x, y, z);
-            if (showLog) {
-                logMatrix("mMatrixProjection", mMatrixProjection);
-                logMatrix("mMatrixTransform", mMatrixTransform);
-                logMatrix("FinalMatrix", getFinalMatrix());
-            }
-        }
-
-        //旋转变换
-        public void rotate(float angle, float x, float y, float z) {
-            Matrix.rotateM(mMatrixTransform, 0, angle, x, y, z);
-        }
-
-        //缩放变换
-        void scale(float x, float y, float z, boolean shoLog) {
-            Matrix.scaleM(mMatrixTransform, 0, x, y, z);
-            if (shoLog) {
-                logMatrix("mMatrixProjection", mMatrixProjection);
-                logMatrix("mMatrixTransform", mMatrixTransform);
-                logMatrix("FinalMatrix", getFinalMatrix());
-            }
-        }
-
-        public void frustum(float left, float right, float bottom, float top, float near, float far) {
-            Matrix.frustumM(mMatrixProjection, 0, left, right, bottom, top, near, far);
-        }
-
-        void ortho(float left, float right, float bottom, float top, float near, float far) {
-            Matrix.orthoM(mMatrixProjection, 0, left, right, bottom, top, near, far);
-        }
-
-        void perspective(int offset, float fovy, float aspect, float zNear, float zFar) {
-            Matrix.perspectiveM(mMatrixProjection, offset, fovy, aspect, zNear, zFar);
-        }
-
-        float[] getFinalMatrix() {
-            float[] ans = new float[16];
-            Matrix.multiplyMM(ans, 0, mMatrixProjection, 0, mMatrixTransform, 0);
-            return ans;
-        }
-
+        matrixTools.translate(transX,transY,0,shoLog);
     }
 }

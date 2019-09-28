@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.wh.extendexoplayer.widget.ZoomViewContainer
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <com.wh.extendexoplayer.widget.TextureRendererView
+            android:id="@+id/video_container"
+            android:layout_width="match_parent"
+            android:layout_height="200dp" />
+    </com.wh.extendexoplayer.widget.ZoomViewContainer>
+
+    <Button
+        android:id="@+id/bt_start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="15dp"
+        android:layout_toStartOf="@+id/bt_pause"
+        android:onClick="startPlay"
+        android:text="播放" />
+
+    <Button
+        android:id="@+id/bt_pause"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginStart="30dp"
+        android:layout_marginEnd="30dp"
+        android:layout_marginBottom="15dp"
+        android:onClick="pausePlay"
+        android:text="暂停" />
+
+    <Button
+        android:id="@+id/bt_stop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="15dp"
+        android:layout_toEndOf="@+id/bt_pause"
+        android:onClick="stopPLay"
+        android:text="停止" />
+
+    <Button
+        android:id="@+id/bt_switch_screen"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="5dp"
+        android:layout_marginTop="5dp"
+        android:text="横竖屏切换"
+        android:onClick="switchScreen"
+        android:layout_alignParentEnd="true"/>
+
+</RelativeLayout>
