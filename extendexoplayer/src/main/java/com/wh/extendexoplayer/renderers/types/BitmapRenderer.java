@@ -104,13 +104,9 @@ public class BitmapRenderer {
         vTextureHandle = GLES20.glGetUniformLocation(program, "vTexture");
         vCoordinateHandle = GLES20.glGetAttribLocation(program, "vCoordinate");
         checkGlError();
-        textureId = createTexture(mBitmap);
     }
 
     private synchronized int createTexture(Bitmap bitmap){
-        if(textureId > 0){
-            return textureId;
-        }
         int[] texture=new int[1];
         if(bitmap!=null&&!bitmap.isRecycled()){
             //生成纹理
@@ -159,6 +155,9 @@ public class BitmapRenderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         checkGlError();
 
+        if(textureId <= 0 && mBitmap!=null && !mBitmap.isRecycled()){
+            textureId = createTexture(mBitmap);
+        }
         GLES20.glUseProgram(program);
         GLES20.glUniformMatrix4fv(vMatrixHandle, 1, false, matrixTools.getFinalMatrix(), 0);
 
@@ -184,7 +183,6 @@ public class BitmapRenderer {
         this.mBitmap = bitmap;
         bitmapWidth = bitmap.getWidth();
         bitmapHeight = bitmap.getHeight();
-        textureId = createTexture(bitmap);
         updateProjection();
     }
 
