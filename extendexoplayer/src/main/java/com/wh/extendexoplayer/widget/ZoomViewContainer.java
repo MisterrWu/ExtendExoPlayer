@@ -62,7 +62,7 @@ public class ZoomViewContainer extends FrameLayout {
         // don't invalidate unless we're actually changing our matrix
         if (matrix == null && !mMatrix.isIdentity() ||
                 matrix != null && !mMatrix.equals(matrix)) {
-            logMatrix("setChildMatrix",matrix);
+            //ogMatrix("setChildMatrix",matrix);
             mMatrix.set(matrix);
             configureBounds();
             invalidate();
@@ -86,7 +86,7 @@ public class ZoomViewContainer extends FrameLayout {
         mDrawMatrix = mMatrix;
         /*mDrawMatrix.setTranslate(Math.round((vwidth - dwidth) * 0.5f),
                 Math.round((vheight - dheight) * 0.5f));*/
-        logMatrix("configureBounds",mDrawMatrix);
+        //logMatrix("configureBounds",mDrawMatrix);
     }
 
     private void logMatrix(String name,Matrix matrix){

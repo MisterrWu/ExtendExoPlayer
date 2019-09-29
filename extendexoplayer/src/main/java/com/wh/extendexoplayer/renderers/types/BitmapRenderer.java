@@ -95,7 +95,7 @@ public class BitmapRenderer {
 
     public void init() {
         // Set the background frame color. This is only visible if the display mesh isn't a full sphere.
-        GLES20.glClearColor(1, 1, 1, 1f);
+        GLES20.glClearColor(0.5f, 0.5f, 0.5f, 1f);
         checkGlError();
 
         program = GlUtil.compileProgram(VERTEX_SHADER_CODE, FRAGMENT_SHADER_CODE);
@@ -157,6 +157,9 @@ public class BitmapRenderer {
 
         if(textureId <= 0 && mBitmap!=null && !mBitmap.isRecycled()){
             textureId = createTexture(mBitmap);
+        }
+        if(textureId <= 0){
+            return;
         }
         GLES20.glUseProgram(program);
         GLES20.glUniformMatrix4fv(vMatrixHandle, 1, false, matrixTools.getFinalMatrix(), 0);

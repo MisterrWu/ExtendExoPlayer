@@ -125,7 +125,7 @@ public final class RectRenderer implements VideoListener {
 
     public SurfaceTexture init() {
         // Set the background frame color. This is only visible if the display mesh isn't a full sphere.
-        GLES20.glClearColor(1, 1, 1, 1f);
+        GLES20.glClearColor(0.5f, 0.5f, 0.5f, 1f);
         checkGlError();
 
         program = GlUtil.compileProgram(VERTEX_SHADER_CODE, FRAGMENT_SHADER_CODE);
