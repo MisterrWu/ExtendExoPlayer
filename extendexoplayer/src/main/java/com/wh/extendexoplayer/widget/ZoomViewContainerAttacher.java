@@ -30,7 +30,7 @@ public class ZoomViewContainerAttacher implements View.OnTouchListener,
     private Interpolator mInterpolator = new AccelerateDecelerateInterpolator();
     private int mZoomDuration = DEFAULT_ZOOM_DURATION;
     private float mMinScale = DEFAULT_MIN_SCALE;
-    private float mMidScale = DEFAULT_MID_SCALE;
+    private float mMidScale = 0;
     private float mMaxScale = DEFAULT_MAX_SCALE;
 
     private boolean mAllowParentInterceptOnEdge = true;
@@ -156,12 +156,21 @@ public class ZoomViewContainerAttacher implements View.OnTouchListener,
                     float scale = getScale();
                     float x = ev.getX();
                     float y = ev.getY();
-                    if (scale < getMediumScale()) {
-                        setScale(getMediumScale(), x, y, true);
-                    } else if (scale >= getMediumScale() && scale < getMaximumScale()) {
-                        setScale(getMaximumScale(), x, y, true);
+                    if(getMediumScale() <= getMinimumScale()
+                    || getMediumScale() >= getMaximumScale()){
+                        if(scale < getMaximumScale()){
+                            setScale(getMaximumScale(), x, y, true);
+                        } else {
+                            setScale(getMinimumScale(), x, y, true);
+                        }
                     } else {
-                        setScale(getMinimumScale(), x, y, true);
+                        if (scale < getMediumScale()) {
+                            setScale(getMediumScale(), x, y, true);
+                        } else if (scale >= getMediumScale() && scale < getMaximumScale()) {
+                            setScale(getMaximumScale(), x, y, true);
+                        } else {
+                            setScale(getMinimumScale(), x, y, true);
+                        }
                     }
                 } catch (ArrayIndexOutOfBoundsException e) {
                     // Can sometimes happen when getX() and getY() is called
