@@ -9,6 +9,32 @@ android {
         targetSdkVersion 28
         versionCode 1
         versionName "1.0.0"
+        externalNativeBuild {
+            cmake {
+                abiFilters 'armeabi-v7a', 'arm64-v8a'
+                cppFlags "-frtti -fexceptions -Wno-deprecated-declarations"
+            }
+        }
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
+        }
+    }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
+    packagingOptions {
+        // 有冲突选择就第一个最为打包内容
+        //pickFirst "**/libffmpeg_mediametadataretriever_jni.so"
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.10.2"
+        }
     }
 
     buildTypes {

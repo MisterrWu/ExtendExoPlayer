@@ -1,4 +1,6 @@
 /build
+.cxx
+.externalNativeBuild
 *.iml
 /release
 
