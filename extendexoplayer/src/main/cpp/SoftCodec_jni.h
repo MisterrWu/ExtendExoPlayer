@@ -8,6 +8,7 @@
 #include <jni.h>
 #include <string>
 #include "SoftCodec.h"
+#include "nativehelper/JNIHelp.h"
 /*The way to do really big things is to do really small things and grow them bigger*/
 
 #ifdef __cplusplus

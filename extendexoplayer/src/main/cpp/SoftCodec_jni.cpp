@@ -10,80 +10,37 @@
 
 static const char *const kClassPathName = "com/wh/extendexoplayer/soft/SoftCodec";
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/*
- * Register native JNI-callable methods.
- *
- * "className" looks like "java/lang/String".
- */
-int jniRegisterNativeMethods(JNIEnv *env, const char *className,
-                             const JNINativeMethod *gMethods, int numMethods) {
-    jclass clazz;
-    clazz = env->FindClass(className);
-    if (clazz == nullptr) {
-        return RESULT_FAIL;
-    }
-    if (env->RegisterNatives(clazz, gMethods, numMethods) < 0) {
-        return RESULT_FAIL;
-    }
-    return RESULT_OK;
-}
-
-/*
- * Throw an exception with the specified class and an optional message.
- */
-int jniThrowException(JNIEnv *env, const char *className, const char *msg) {
-    jclass exceptionClass;
-
-    exceptionClass = env->FindClass(className);
-    if (exceptionClass == nullptr) {
-        return RESULT_FAIL;
-    }
-
-    if (env->ThrowNew(exceptionClass, msg) != JNI_OK) {
-        return RESULT_FAIL;
-    }
-    return RESULT_OK;
-}
-
-#ifdef __cplusplus
-}
-#endif
-
 static void com_wh_extendexoplayer_soft_SoftCodec_release(JNIEnv *env, jobject thiz) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_release");
 }
 
 static void com_wh_extendexoplayer_soft_SoftCodec_setSurface(JNIEnv *env, jobject thiz,
                                                              jobject surface) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_setSurface");
 }
 
 static void com_wh_extendexoplayer_soft_SoftCodec_setCallback(JNIEnv *env, jobject thiz,
                                                               jobject cb) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_setCallback");
 }
 
 static void com_wh_extendexoplayer_soft_SoftCodec_configure(JNIEnv *env, jobject thiz,
                                                             jobjectArray keys, jobjectArray values,
                                                             jobject surface, jobject crypto,
                                                             jint flags) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_configure");
 }
 
 static void com_wh_extendexoplayer_soft_SoftCodec_start(JNIEnv *env, jobject thiz) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_start");
 }
 
 static void com_wh_extendexoplayer_soft_SoftCodec_stop(JNIEnv *env, jobject thiz) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_stop");
 }
 
 static void com_wh_extendexoplayer_soft_SoftCodec_flush(JNIEnv *env, jobject thiz) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_flush");
 }
 
 static void com_wh_extendexoplayer_soft_SoftCodec_queueInputBuffer(JNIEnv *env, jobject thiz,
@@ -91,79 +48,71 @@ static void com_wh_extendexoplayer_soft_SoftCodec_queueInputBuffer(JNIEnv *env, 
                                                                    jint size,
                                                                    jlong presentationTimeUs,
                                                                    jint flags) {
-
-}
-
-static void com_wh_extendexoplayer_soft_SoftCodec_queueSecureInputBuffer(JNIEnv *env, jobject thiz,
-                                                                         jint index, jint offset,
-                                                                         jobject info,
-                                                                         jlong presentationTimeUs,
-                                                                         jint flags) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_queueInputBuffer");
 }
 
 static jint com_wh_extendexoplayer_soft_SoftCodec_dequeueInputBuffer(JNIEnv *env, jobject thiz,
                                                                      jboolean input) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_dequeueInputBuffer");
 }
 
 static jint com_wh_extendexoplayer_soft_SoftCodec_dequeueOutputBuffer(JNIEnv *env, jobject thiz,
                                                                       jobject info,
                                                                       jlong timeoutUs) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_dequeueOutputBuffer");
 }
 
 static void com_wh_extendexoplayer_soft_SoftCodec_releaseOutputBuffer(JNIEnv *env, jobject thiz,
                                                                       jint index, jboolean render,
                                                                       jboolean updatePTS,
                                                                       jlong timeNs) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_releaseOutputBuffer");
 }
 
 static jobject com_wh_extendexoplayer_soft_SoftCodec_getFormatNative(JNIEnv *env, jobject thiz,
                                                                      jboolean input) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_getFormatNative");
 }
 
 static void com_wh_extendexoplayer_soft_SoftCodec_setVideoScalingMode(JNIEnv *env, jobject thiz,
                                                                       jint mode) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_setVideoScalingMode");
 }
 
 static void
 com_wh_extendexoplayer_soft_SoftCodec_enableOnFrameRenderedListener(JNIEnv *env, jobject thiz,
                                                                     jboolean enable) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_enableOnFrameRenderedListener");
 }
 
 static void com_wh_extendexoplayer_soft_SoftCodec_setParameter(JNIEnv *env, jobject thiz,
                                                                jobjectArray keys,
                                                                jobjectArray values) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_setParameter");
 }
 
 static jobjectArray com_wh_extendexoplayer_soft_SoftCodec_getBuffers(JNIEnv *env, jobject thiz,
                                                                      jboolean input) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_getBuffers");
 }
 
 static jobject com_wh_extendexoplayer_soft_SoftCodec_getBuffer(JNIEnv *env, jobject thiz,
                                                                jboolean input, jint index) {
-    ANDROID_LOG_E("_getBuffer");
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_getBuffer");
 }
 
-static void com_wh_extendexoplayer_soft_SoftCodec_init(JNIEnv *env, jobject clazz) {
-    ANDROID_LOG_E("_init");
+static void com_wh_extendexoplayer_soft_SoftCodec_init(JNIEnv *env) {
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_init");
 }
 
 static void com_wh_extendexoplayer_soft_SoftCodec_setup(JNIEnv *env, jobject thiz,
                                                         jstring name, jboolean nameIsType,
                                                         jboolean encoder) {
-    ANDROID_LOG_E("_setup");
+    ALOGE("com_wh_extendexoplayer_soft_SoftCodec_setup");
 }
 
 static void com_wh_extendexoplayer_soft_SoftCodec_finalize(JNIEnv *env, jobject thiz) {
-
+    ALOGD("com_wh_extendexoplayer_soft_SoftCodec_finalize");
 }
 
 static const JNINativeMethod gMethods[] = {
