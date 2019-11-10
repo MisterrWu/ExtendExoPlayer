@@ -181,6 +181,9 @@ MODULE_API int jniThrowExceptionFmt(C_JNIEnv* env, const char* className, const 
 MODULE_API int jniThrowNullPointerException(C_JNIEnv* env, const char* msg) {
     return jniThrowException(env, "java/lang/NullPointerException", msg);
 }
+MODULE_API int jniThrowIllegalStateException(C_JNIEnv* env, const char* msg) {
+    return jniThrowException(env, "java/lang/IllegalStateException", msg);
+}
 MODULE_API int jniThrowRuntimeException(C_JNIEnv* env, const char* msg) {
     return jniThrowException(env, "java/lang/RuntimeException", msg);
 }

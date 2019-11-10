@@ -56,6 +56,10 @@ MODULE_API int jniThrowExceptionFmt(C_JNIEnv* env, const char* className, const 
  */
 MODULE_API int jniThrowNullPointerException(C_JNIEnv* env, const char* msg);
 /*
+ * Throw a java.lang.IllegalStateException, with an optional message.
+ */
+MODULE_API int jniThrowIllegalStateException(C_JNIEnv* env, const char* msg);
+/*
  * Throw a java.lang.RuntimeException, with an optional message.
  */
 MODULE_API int jniThrowRuntimeException(C_JNIEnv* env, const char* msg);
@@ -168,6 +172,9 @@ inline int jniThrowExceptionFmt(JNIEnv* env, const char* className, const char* 
 }
 inline int jniThrowNullPointerException(JNIEnv* env, const char* msg) {
     return jniThrowNullPointerException(&env->functions, msg);
+}
+inline int jniThrowIllegalStateException(JNIEnv* env, const char* msg) {
+    return jniThrowIllegalStateException(&env->functions, msg);
 }
 inline int jniThrowRuntimeException(JNIEnv* env, const char* msg) {
     return jniThrowRuntimeException(&env->functions, msg);

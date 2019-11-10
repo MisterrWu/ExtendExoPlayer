@@ -279,8 +279,6 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
     private boolean codecNeedsAdaptationWorkaroundBuffer;
     private boolean shouldSkipAdaptationWorkaroundOutputBuffer;
     private boolean codecNeedsEosPropagation;
-    private ByteBuffer[] inputBuffers;
-    private ByteBuffer[] outputBuffers;
     private long codecHotswapDeadlineMs;
     private int inputIndex;
     private int outputIndex;
@@ -553,7 +551,6 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
         codecFormat = null;
         resetInputBuffer();
         resetOutputBuffer();
-        resetCodecBuffers();
         waitingForKeys = false;
         codecHotswapDeadlineMs = C.TIME_UNSET;
         decodeOnlyPresentationTimestamps.clear();
@@ -807,10 +804,8 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
             codec.start();
             TraceUtil.endSection();
             codecInitializedTimestamp = SystemClock.elapsedRealtime();
-            getCodecBuffers(codec);
         } catch (Exception e) {
             if (codec != null) {
-                resetCodecBuffers();
                 codec.release();
             }
             throw e;
@@ -859,34 +854,12 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
                 || SystemClock.elapsedRealtime() - drainStartTimeMs < renderTimeLimitMs;
     }
 
-    private void getCodecBuffers(SoftCodec codec) {
-        if (Util.SDK_INT < 21) {
-            inputBuffers = codec.getInputBuffers();
-            outputBuffers = codec.getOutputBuffers();
-        }
-    }
-
-    private void resetCodecBuffers() {
-        if (Util.SDK_INT < 21) {
-            inputBuffers = null;
-            outputBuffers = null;
-        }
-    }
-
     private ByteBuffer getInputBuffer(int inputIndex) {
-        if (Util.SDK_INT >= 21) {
-            return codec.getInputBuffer(inputIndex);
-        } else {
-            return inputBuffers[inputIndex];
-        }
+        return codec.getInputBuffer(inputIndex);
     }
 
     private ByteBuffer getOutputBuffer(int outputIndex) {
-        if (Util.SDK_INT >= 21) {
-            return codec.getOutputBuffer(outputIndex);
-        } else {
-            return outputBuffers[outputIndex];
-        }
+        return codec.getOutputBuffer(outputIndex);
     }
 
     private boolean hasOutputBuffer() {
@@ -1400,9 +1373,6 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
                 if (outputIndex == SoftCodec.INFO_OUTPUT_FORMAT_CHANGED /* (-2) */) {
                     processOutputFormat();
                     return true;
-                } else if (outputIndex == SoftCodec.INFO_OUTPUT_BUFFERS_CHANGED /* (-3) */) {
-                    processOutputBuffersChanged();
-                    return true;
                 }
                 /* SoftCodec.INFO_TRY_AGAIN_LATER (-1) or unknown negative return value */
                 if (codecNeedsEosPropagation
@@ -1505,15 +1475,6 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
             format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 1);
         }
         onOutputFormatChanged(codec, format);
-    }
-
-    /**
-     * Processes a change in the output buffers.
-     */
-    private void processOutputBuffersChanged() {
-        if (Util.SDK_INT < 21) {
-            outputBuffers = codec.getOutputBuffers();
-        }
     }
 
     /**

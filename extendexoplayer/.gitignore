@@ -1,5 +1,6 @@
 /build
 /src/main/cpp/android_framworks
+/src/main/cpp/splayer
 .cxx
 .externalNativeBuild
 *.iml

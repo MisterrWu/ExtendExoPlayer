@@ -52,4 +52,14 @@
     if (cond) __android_log_assert(#cond, LOG_TAG, __VA_ARGS__)
 #endif
 
+#define LITERAL_TO_STRING_INTERNAL(x)    #x
+#define LITERAL_TO_STRING(x) LITERAL_TO_STRING_INTERNAL(x)
+
+#define CHECK(condition)                                \
+    ALOG_ALWAYS_FATAL_IF(                                \
+            !(condition),                               \
+            "%s",                                       \
+            __FILE__ ":" LITERAL_TO_STRING(__LINE__)    \
+            " CHECK(" #condition ") failed.")
+
 #endif //EXTENDEXOPLAYER_ALOG_PRIV_H

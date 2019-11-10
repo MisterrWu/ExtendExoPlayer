@@ -208,9 +208,6 @@ public final class SoftCodec {
                 case CB_INPUT_AVAILABLE:
                 {
                     int index = msg.arg2;
-                    synchronized(mBufferLock) {
-                        validateInputByteBuffer(mCachedInputBuffers, index);
-                    }
                     mCallback.onInputBufferAvailable(mCodec, index);
                     break;
                 }
@@ -219,9 +216,6 @@ public final class SoftCodec {
                 {
                     int index = msg.arg2;
                     SoftCodec.BufferInfo info = (SoftCodec.BufferInfo) msg.obj;
-                    synchronized(mBufferLock) {
-                        validateOutputByteBuffer(mCachedOutputBuffers, index, info);
-                    }
                     mCallback.onOutputBufferAvailable(
                             mCodec, index, info);
                     break;
@@ -395,12 +389,8 @@ public final class SoftCodec {
      */
     public final void start() {
         native_start();
-        synchronized(mBufferLock) {
-            cacheBuffers(true /* input */);
-            cacheBuffers(false /* input */);
-        }
     }
-    private native final void native_start();
+    private native void native_start();
 
     /**
      * Finish the decode/encode session, note that the codec instance
@@ -452,8 +442,6 @@ public final class SoftCodec {
      */
     public final void flush() {
         synchronized(mBufferLock) {
-            invalidateByteBuffers(mCachedInputBuffers);
-            invalidateByteBuffers(mCachedOutputBuffers);
             mDequeuedInputBuffers.clear();
             mDequeuedOutputBuffers.clear();
         }
@@ -667,19 +655,13 @@ public final class SoftCodec {
             int offset, int size, long presentationTimeUs, int flags)
             throws SoftCodec.CryptoException {
         synchronized(mBufferLock) {
-            invalidateByteBuffer(mCachedInputBuffers, index);
             mDequeuedInputBuffers.remove(index);
         }
-        try {
-            native_queueInputBuffer(
-                    index, offset, size, presentationTimeUs, flags);
-        } catch (SoftCodec.CryptoException | IllegalStateException e) {
-            revalidateByteBuffer(mCachedInputBuffers, index);
-            throw e;
-        }
+        native_queueInputBuffer(
+                index, offset, size, presentationTimeUs, flags);
     }
 
-    private native final void native_queueInputBuffer(
+    private native void native_queueInputBuffer(
             int index,
             int offset, int size, long presentationTimeUs, int flags)
             throws SoftCodec.CryptoException;
@@ -700,16 +682,10 @@ public final class SoftCodec {
      * @throws SoftCodec.CodecException upon codec error.
      */
     public final int dequeueInputBuffer(long timeoutUs) {
-        int res = native_dequeueInputBuffer(timeoutUs);
-        if (res >= 0) {
-            synchronized(mBufferLock) {
-                validateInputByteBuffer(mCachedInputBuffers, res);
-            }
-        }
-        return res;
+        return native_dequeueInputBuffer(timeoutUs);
     }
 
-    private native final int native_dequeueInputBuffer(long timeoutUs);
+    private native int native_dequeueInputBuffer(long timeoutUs);
 
     /**
      * If a non-negative timeout had been specified in the call
@@ -728,14 +704,14 @@ public final class SoftCodec {
 
     /**
      * The output buffers have changed, the client must refer to the new
-     * set of output buffers returned by {@link #getOutputBuffers} from
+     * set of output buffers returned by from
      * this point on.
      *
      * <p>Additionally, this event signals that the video scaling mode
      * may have been reset to the default.</p>
      *
      * @deprecated This return value can be ignored as {@link
-     * #getOutputBuffers} has been deprecated.  Client should
+     * } has been deprecated.  Client should
      * request a current buffer using on of the get-buffer or
      * get-image methods each time one has been dequeued.
      */
@@ -760,10 +736,7 @@ public final class SoftCodec {
              SoftCodec.BufferInfo info, long timeoutUs) {
         int res = native_dequeueOutputBuffer(info, timeoutUs);
         synchronized(mBufferLock) {
-            if (res == INFO_OUTPUT_BUFFERS_CHANGED) {
-                cacheBuffers(false /* input */);
-            } else if (res >= 0) {
-                validateOutputByteBuffer(mCachedOutputBuffers, res, info);
+            if (res >= 0) {
                 if (mHasSurface) {
                     mDequeuedOutputInfos.put(res, info.dup());
                 }
@@ -797,7 +770,6 @@ public final class SoftCodec {
     public final void releaseOutputBuffer(int index, boolean render) {
         SoftCodec.BufferInfo info = null;
         synchronized(mBufferLock) {
-            invalidateByteBuffer(mCachedOutputBuffers, index);
             mDequeuedOutputBuffers.remove(index);
             if (mHasSurface) {
                 info = mDequeuedOutputInfos.remove(index);
@@ -858,7 +830,6 @@ public final class SoftCodec {
     public final void releaseOutputBuffer(int index, long renderTimestampNs) {
         SoftCodec.BufferInfo info = null;
         synchronized(mBufferLock) {
-            invalidateByteBuffer(mCachedOutputBuffers, index);
             mDequeuedOutputBuffers.remove(index);
             if (mHasSurface) {
                 info = mDequeuedOutputInfos.remove(index);
@@ -941,8 +912,6 @@ public final class SoftCodec {
         }
     }
 
-    private ByteBuffer[] mCachedInputBuffers;
-    private ByteBuffer[] mCachedOutputBuffers;
     private final BufferMap mDequeuedInputBuffers = new BufferMap();
     private final BufferMap mDequeuedOutputBuffers = new BufferMap();
     private final Map<Integer, SoftCodec.BufferInfo> mDequeuedOutputInfos =
@@ -1020,86 +989,9 @@ public final class SoftCodec {
 
     private final void freeAllTrackedBuffers() {
         synchronized(mBufferLock) {
-            freeByteBuffers(mCachedInputBuffers);
-            freeByteBuffers(mCachedOutputBuffers);
-            mCachedInputBuffers = null;
-            mCachedOutputBuffers = null;
             mDequeuedInputBuffers.clear();
             mDequeuedOutputBuffers.clear();
         }
-    }
-
-    private final void cacheBuffers(boolean input) {
-        ByteBuffer[] buffers = null;
-        try {
-            buffers = getBuffers(input);
-            invalidateByteBuffers(buffers);
-        } catch (IllegalStateException e) {
-            // we don't get buffers in async mode
-        }
-        if (input) {
-            mCachedInputBuffers = buffers;
-        } else {
-            mCachedOutputBuffers = buffers;
-        }
-    }
-
-    /**
-     * Retrieve the set of input buffers.  Call this after start()
-     * returns. After calling this method, any ByteBuffers
-     * previously returned by an earlier call to this method MUST no
-     * longer be used.
-     *
-     * @deprecated Use the new {@link #getInputBuffer} method instead
-     * each time an input buffer is dequeued.
-     *
-     * <b>Note:</b> As of API 21, dequeued input buffers are
-     * automatically {@link java.nio.Buffer#clear cleared}.
-     *
-     * <em>Do not use this method if using an input surface.</em>
-     *
-     * @throws IllegalStateException if not in the Executing state,
-     *         or codec is configured in asynchronous mode.
-     * @throws SoftCodec.CodecException upon codec error.
-     */
-
-    public ByteBuffer[] getInputBuffers() {
-        if (mCachedInputBuffers == null) {
-            throw new IllegalStateException();
-        }
-        // FIXME: check codec status
-        return mCachedInputBuffers;
-    }
-
-    /**
-     * Retrieve the set of output buffers.  Call this after start()
-     * returns and whenever dequeueOutputBuffer signals an output
-     * buffer change by returning {@link
-     * #INFO_OUTPUT_BUFFERS_CHANGED}. After calling this method, any
-     * ByteBuffers previously returned by an earlier call to this
-     * method MUST no longer be used.
-     *
-     * @deprecated Use the new {@link #getOutputBuffer} method instead
-     * each time an output buffer is dequeued.  This method is not
-     * supported if codec is configured in asynchronous mode.
-     *
-     * <b>Note:</b> As of API 21, the position and limit of output
-     * buffers that are dequeued will be set to the valid data
-     * range.
-     *
-     * <em>Do not use this method if using an output surface.</em>
-     *
-     * @throws IllegalStateException if not in the Executing state,
-     *         or codec is configured in asynchronous mode.
-     * @throws SoftCodec.CodecException upon codec error.
-     */
-
-    public ByteBuffer[] getOutputBuffers() {
-        if (mCachedOutputBuffers == null) {
-            throw new IllegalStateException();
-        }
-        // FIXME: check codec status
-        return mCachedOutputBuffers;
     }
 
     /**
@@ -1124,7 +1016,6 @@ public final class SoftCodec {
     public ByteBuffer getInputBuffer(int index) {
         ByteBuffer newBuffer = getBuffer(true /* input */, index);
         synchronized(mBufferLock) {
-            invalidateByteBuffer(mCachedInputBuffers, index);
             mDequeuedInputBuffers.put(index, newBuffer);
         }
         return newBuffer;
@@ -1153,7 +1044,6 @@ public final class SoftCodec {
     public ByteBuffer getOutputBuffer(int index) {
         ByteBuffer newBuffer = getBuffer(false /* input */, index);
         synchronized(mBufferLock) {
-            invalidateByteBuffer(mCachedOutputBuffers, index);
             mDequeuedOutputBuffers.put(index, newBuffer);
         }
         return newBuffer;
@@ -1252,7 +1142,6 @@ public final class SoftCodec {
      * a valid callback should be provided before {@link #configure} is called.
      *
      * When asynchronous callback is enabled, the client should not call
-     * {@link #getInputBuffers}, {@link #getOutputBuffers},
      * {@link #dequeueInputBuffer(long)} or {@link #dequeueOutputBuffer(SoftCodec.BufferInfo, long)}.
      * <p>
      * Also, {@link #flush} behaves differently in asynchronous mode.  After calling
@@ -1445,8 +1334,6 @@ public final class SoftCodec {
     }
 
     private native void setParameters(String[] keys, Object[] values);
-
-    private native ByteBuffer[] getBuffers(boolean input);
 
     private native ByteBuffer getBuffer(boolean input, int index);
 
