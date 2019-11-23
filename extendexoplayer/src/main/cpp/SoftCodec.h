@@ -13,6 +13,10 @@
 
 class SoftCode{
 
+private:
+    int getInputBuffer();
+    int getOutputBuffer();
+
 public:
     int getBuffer(JNIEnv *env, jboolean input, jint index, jobject *buffer);
 

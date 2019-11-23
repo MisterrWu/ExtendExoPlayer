@@ -25,12 +25,24 @@ set_target_properties( ffmpeg
         ${distribution_DIR}/${ANDROID_ABI}/libffmpeg.so)
 
 # 引入头文件
-include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(
+        ${CMAKE_SOURCE_DIR}/ffmpeg/include
+        ${CMAKE_SOURCE_DIR}/utils/include
+        ${CMAKE_SOURCE_DIR}/base/include
+)
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
 # Gradle automatically packages shared libraries with your APK.
+
+file(GLOB srcs ${CMAKE_SOURCE_DIR}/*.cpp)
+
+file(GLOB nativehelper nativehelper/*.cpp)
+
+file(GLOB utils utils/*.cpp)
+
+file(GLOB base base/*.cpp)
 
 add_library( # Sets the name of the library.
         native-lib
@@ -39,10 +51,11 @@ add_library( # Sets the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-        SoftCodec_jni.cpp
-        SoftCodec.cpp
-        nativehelper/JniConstants.cpp
-        nativehelper/JNIHelp.cpp)
+        ${srcs}
+        ${nativehelper}
+        ${base}
+        ${utils}
+        )
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
