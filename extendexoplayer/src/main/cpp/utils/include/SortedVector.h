@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#include <log/log.h>
 #include <TypeHelpers.h>
 #include <Vector.h>
 #include <VectorImpl.h>
@@ -200,9 +199,6 @@ TYPE* SortedVector<TYPE>::editArray() {
 
 template<class TYPE> inline
 const TYPE& SortedVector<TYPE>::operator[](size_t index) const {
-    LOG_FATAL_IF(index>=size(),
-            "%s: index=%u out of range (%u)", __PRETTY_FUNCTION__,
-            int(index), int(size()));
     return *(array() + index);
 }
 

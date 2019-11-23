@@ -29,6 +29,7 @@ include_directories(
         ${CMAKE_SOURCE_DIR}/ffmpeg/include
         ${CMAKE_SOURCE_DIR}/utils/include
         ${CMAKE_SOURCE_DIR}/base/include
+        ${CMAKE_SOURCE_DIR}/foundation/include
 )
 
 # Creates and names a library, sets it as either STATIC
@@ -38,11 +39,13 @@ include_directories(
 
 file(GLOB srcs ${CMAKE_SOURCE_DIR}/*.cpp)
 
-file(GLOB nativehelper nativehelper/*.cpp)
+file(GLOB nativehelper ${CMAKE_SOURCE_DIR}/nativehelper/*.cpp)
 
-file(GLOB utils utils/*.cpp)
+file(GLOB utils ${CMAKE_SOURCE_DIR}/utils/*.cpp)
 
-file(GLOB base base/*.cpp)
+file(GLOB base ${CMAKE_SOURCE_DIR}/base/*.cpp)
+
+file(GLOB foundation ${CMAKE_SOURCE_DIR}/foundation/*.cpp)
 
 add_library( # Sets the name of the library.
         native-lib
@@ -55,6 +58,7 @@ add_library( # Sets the name of the library.
         ${nativehelper}
         ${base}
         ${utils}
+        ${foundation}
         )
 
 # Searches for a specified prebuilt library and stores the path as a

@@ -2,7 +2,6 @@
 /src/main/cpp/android_framworks
 /src/main/cpp/splayer
 /src/main/cpp/backtrace
-/src/main/cpp/foundation
 .cxx
 .externalNativeBuild
 *.iml
