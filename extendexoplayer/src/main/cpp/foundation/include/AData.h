@@ -20,10 +20,10 @@
 #include <memory> // for std::shared_ptr, weak_ptr and unique_ptr
 #include <type_traits> // for std::aligned_union
 
-#include <../../utils/include/StrongPointer.h> // for android::sp and wp
+#include "../../utils/include/StrongPointer.h" // for android::sp and wp
 
-#include <TypeTraits.h>
-#include <Flagged.h>
+#include "TypeTraits.h"
+#include "Flagged.h"
 
 #undef HIDE
 #define HIDE __attribute__((visibility("hidden")))

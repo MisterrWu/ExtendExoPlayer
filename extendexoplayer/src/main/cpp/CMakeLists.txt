@@ -30,6 +30,7 @@ include_directories(
         ${CMAKE_SOURCE_DIR}/utils/include
         ${CMAKE_SOURCE_DIR}/base/include
         ${CMAKE_SOURCE_DIR}/foundation/include
+        ${CMAKE_SOURCE_DIR}/media/include
 )
 
 # Creates and names a library, sets it as either STATIC
@@ -47,6 +48,8 @@ file(GLOB base ${CMAKE_SOURCE_DIR}/base/*.cpp)
 
 file(GLOB foundation ${CMAKE_SOURCE_DIR}/foundation/*.cpp)
 
+file(GLOB media ${CMAKE_SOURCE_DIR}/media/*.cpp)
+
 add_library( # Sets the name of the library.
         native-lib
 
@@ -59,6 +62,7 @@ add_library( # Sets the name of the library.
         ${base}
         ${utils}
         ${foundation}
+        ${media}
         )
 
 # Searches for a specified prebuilt library and stores the path as a

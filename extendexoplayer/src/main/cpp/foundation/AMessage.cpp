@@ -924,6 +924,8 @@ const char *AMessage::getEntryNameAt(size_t index, Type *type) const {
     return mItems[index].mName;
 }
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "err_ovl_no_viable_member_function_in_call"
 AMessage::ItemData AMessage::getEntryAt(size_t index) const {
     ItemData it;
     if (index < mNumItems) {
@@ -957,6 +959,7 @@ AMessage::ItemData AMessage::getEntryAt(size_t index) const {
     }
     return it;
 }
+#pragma clang diagnostic pop
 
 status_t AMessage::setEntryNameAt(size_t index, const char *name) {
     if (index >= mNumItems) {

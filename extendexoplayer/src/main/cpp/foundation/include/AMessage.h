@@ -29,7 +29,6 @@ namespace android {
 struct ABuffer;
 struct AHandler;
 struct AString;
-class Parcel;
 
 struct AReplyToken : public RefBase {
     explicit AReplyToken(const sp<ALooper> &looper)
