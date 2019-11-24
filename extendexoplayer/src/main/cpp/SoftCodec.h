@@ -11,6 +11,8 @@
 #include "nativehelper/ALog-priv.h"
 #include "utils/include/StrongPointer.h"
 #include <MediaCodecBuffer.h>
+#include <AMessage.h>
+#include <ABuffer.h>
 
 #define RESULT_OK 1
 #define RESULT_FAIL -1
@@ -43,6 +45,9 @@ namespace android {
                 jobject *buf) const;
 
         void cacheJavaObjects(JNIEnv *env);
+
+        int32_t ConvertMessageToMap(
+                JNIEnv *env, const sp<AMessage> &msg, jobject *map);
 
     public:
         SoftCode(
