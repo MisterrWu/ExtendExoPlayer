@@ -6,50 +6,88 @@
 #define EXTENDEXOPLAYER_SOFTCODEC_H
 
 #define LOG_TAG "SoftCodec"
+
+#include <android/log.h>
 #include "nativehelper/ALog-priv.h"
+#include "utils/include/StrongPointer.h"
+#include <MediaCodecBuffer.h>
 
 #define RESULT_OK 1
 #define RESULT_FAIL -1
 
-class SoftCode{
+namespace android {
 
-private:
-    int getInputBuffer();
-    int getOutputBuffer();
+    class SoftCode {
 
-public:
-    int getBuffer(JNIEnv *env, jboolean input, jint index, jobject *buffer);
+    private:
 
-    int setParameters(JNIEnv *env, jobjectArray keys, jobjectArray values);
+        jclass mClass;
+        jweak mObject;
+        jobject mSurfaceTextureClient;
 
-    int enableOnFrameRenderedListener(jboolean enable);
+        // java objects cached
+        jclass mByteBufferClass;
+        jobject mNativeByteOrderObj;
+        jmethodID mByteBufferOrderMethodID;
+        jmethodID mByteBufferPositionMethodID;
+        jmethodID mByteBufferLimitMethodID;
+        jmethodID mByteBufferAsReadOnlyBufferMethodID;
 
-    void setVideoScalingMode(jint mode);
+        int32_t getInputBuffer(jint i, sp <MediaCodecBuffer> *pSp);
 
-    int getFormat(JNIEnv *env, jboolean input, jobject *format);
+        int32_t getOutputBuffer(jint i, sp <MediaCodecBuffer> *pSp);
 
-    int releaseOutputBuffer(jint index, jboolean render, jboolean updatePTS, jlong timeNs);
+        template<typename T>
+        int32_t createByteBufferFromABuffer(
+                JNIEnv *env, bool readOnly, bool clearBuffer, const sp <T> &buffer,
+                jobject *buf) const;
 
-    int dequeueOutputBuffer(JNIEnv *env, jobject bufferInfo, size_t *index, jlong timeoutUS);
+        void cacheJavaObjects(JNIEnv *env);
 
-    int dequeueInputBuffer(size_t *index, jlong timeoutUs);
+    public:
+        SoftCode(
+                JNIEnv *env, jobject thiz,
+                const char *name, bool nameIsType, bool encoder);
 
-    int queueInputBuffer(jint index, jint offset, jint size, jlong timestampUs, jint flags,
-                         char **errorDetailMsg);
+        int getBuffer(JNIEnv *env, jboolean input, jint index, jobject *buffer);
 
-    int flush();
+        int setParameters(JNIEnv *env, jobjectArray keys, jobjectArray values);
 
-    int stop();
+        int enableOnFrameRenderedListener(jboolean enable);
 
-    int start();
+        void setVideoScalingMode(jint mode);
 
-    int configure(jobjectArray keys, jobjectArray values, jobject surface, jint flags);
+        int getFormat(JNIEnv *env, jboolean input, jobject *format);
 
-    int setCallback(jobject callback);
+        int releaseOutputBuffer(jint index, jboolean render, jboolean updatePTS, jlong timeNs);
 
-    int setSurface(jobject surface);
+        int dequeueOutputBuffer(JNIEnv *env, jobject bufferInfo, size_t *index, jlong timeoutUS);
 
-    void release();
-};
+        int dequeueInputBuffer(size_t *index, jlong timeoutUs);
 
+        int queueInputBuffer(jint index, jint offset, jint size, jlong timestampUs, jint flags,
+                             char **errorDetailMsg);
+
+        int flush();
+
+        int stop();
+
+        int start();
+
+        int configure(jobjectArray keys, jobjectArray values, jobject surface, jint flags);
+
+        int setCallback(jobject callback);
+
+        int setSurface(jobject surface);
+
+        void release();
+
+        struct BufferInfo {
+            BufferInfo();
+
+            sp <MediaCodecBuffer> mData;
+            bool mOwnedByClient;
+        };
+    };
+}
 #endif //EXTENDEXOPLAYER_SOFTCODEC_H

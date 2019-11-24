@@ -7,6 +7,7 @@
 
 #include <jni.h>
 #include <string>
+#include <android/log.h>
 #include "SoftCodec.h"
 #include "nativehelper/JNIHelp.h"
 /*The way to do really big things is to do really small things and grow them bigger*/

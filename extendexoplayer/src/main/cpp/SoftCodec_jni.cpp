@@ -365,7 +365,7 @@ static void com_wh_extendexoplayer_soft_SoftCodec_setup(JNIEnv *env, jobject thi
     if (tmp == nullptr) {
         return;
     }
-    auto *codec = new SoftCode();
+    auto *codec = new SoftCode(env, thiz, tmp, nameIsType, encoder);
     setSoftCode(env, thiz, codec);
 }
 
