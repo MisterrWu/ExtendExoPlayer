@@ -25,8 +25,8 @@
 # include <pthread.h>
 #endif
 
-#include <Errors.h>
-#include <Timers.h>
+#include "Errors.h"
+#include "Timers.h"
 
 // Enable thread safety attributes only with clang.
 // The attributes can be safely erased when compiling with other compilers.

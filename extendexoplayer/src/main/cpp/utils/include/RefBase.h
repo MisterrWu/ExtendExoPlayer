@@ -180,10 +180,10 @@
 #include <string.h>
 
 // LightRefBase used to be declared in this header, so we have to include it
-#include <LightRefBase.h>
+#include "LightRefBase.h"
 
-#include <StrongPointer.h>
-#include <TypeHelpers.h>
+#include "StrongPointer.h"
+#include "TypeHelpers.h"
 
 // ---------------------------------------------------------------------------
 namespace android {

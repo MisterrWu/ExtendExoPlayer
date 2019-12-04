@@ -5,15 +5,19 @@
 #include <jni.h>
 #include "SoftCodec.h"
 #include "nativehelper/ScopedLocalRef.h"
+#include "foundation/include/AMessage.h"
+#include "foundation/include/ABuffer.h"
 
 namespace android {
+
+    const static char* INIT  = "<init>";
 
     static jobject makeIntegerObject(JNIEnv *env, int32_t value) {
         ScopedLocalRef<jclass> clazz(env, env->FindClass("java/lang/Integer"));
         CHECK(clazz.get() != NULL);
 
         jmethodID integerConstructID =
-                env->GetMethodID(clazz.get(), "<init>", "(I)V");
+                env->GetMethodID(clazz.get(), INIT, "(I)V");
         CHECK(integerConstructID != NULL);
 
         return env->NewObject(clazz.get(), integerConstructID, value);
@@ -23,7 +27,7 @@ namespace android {
         ScopedLocalRef<jclass> clazz(env, env->FindClass("java/lang/Long"));
         CHECK(clazz.get() != NULL);
 
-        jmethodID longConstructID = env->GetMethodID(clazz.get(), "<init>", "(J)V");
+        jmethodID longConstructID = env->GetMethodID(clazz.get(), INIT, "(J)V");
         CHECK(longConstructID != NULL);
 
         return env->NewObject(clazz.get(), longConstructID, value);
@@ -34,7 +38,7 @@ namespace android {
         CHECK(clazz.get() != NULL);
 
         jmethodID floatConstructID =
-                env->GetMethodID(clazz.get(), "<init>", "(F)V");
+                env->GetMethodID(clazz.get(), INIT, "(F)V");
         CHECK(floatConstructID != NULL);
 
         return env->NewObject(clazz.get(), floatConstructID, value);
@@ -84,34 +88,60 @@ namespace android {
 
     SoftCode::SoftCode(JNIEnv *env, jobject thiz, const char *name, bool nameIsType, bool encoder)
             : mClass(nullptr),
-              mObject(nullptr) {
+              mObject(nullptr),
+              mFFmpegDecoder(nullptr) {
         jclass clazz = env->GetObjectClass(thiz);
         CHECK(clazz != nullptr);
 
         mClass = (jclass) env->NewGlobalRef(clazz);
         mObject = env->NewWeakGlobalRef(thiz);
+        mFFmpegDecoder = new FFmpegDecoder(name,nameIsType,encoder);
 
         cacheJavaObjects(env);
     }
 
-    int32_t SoftCode::getInputBuffer(jint index, sp<MediaCodecBuffer> *buffer) { return RESULT_OK; }
+    int32_t SoftCode::getBuffer(jint index, sp<MediaCodecBuffer> *buffer, size_t portIndex) {
 
-    int32_t
-    SoftCode::getOutputBuffer(jint index, sp<MediaCodecBuffer> *buffer) { return RESULT_OK; }
+        buffer->clear();
+
+        // we do not want mPortBuffers to change during this section
+        // we also don't want mOwnedByClient to change during this
+        Mutex::Autolock al(mBufferLock);
+
+        std::vector<BufferInfo> &buffers = mPortBuffers[portIndex];
+        if (index >= buffers.size()) {
+           /* ALOGE("getBufferAndFormat - trying to get buffer with "
+                  "bad index (index=%zu buffer_size=%zu)", index, buffers.size());*/
+            return INVALID_OPERATION;
+        }
+
+        const BufferInfo &info = buffers[index];
+        if (!info.mOwnedByClient) {
+            /*ALOGE("getBufferAndFormat - invalid operation "
+                  "(the index %zu is not owned by client)", index);*/
+            return INVALID_OPERATION;
+        }
+
+        *buffer = info.mData;
+
+        return RESULT_OK;
+    }
 
     int SoftCode::getBuffer(JNIEnv *env, jboolean input, jint index, jobject *buf) {
-        sp<MediaCodecBuffer> buffer;
+/*        sp<MediaCodecBuffer> buffer;
 
         status_t err =
                 input
-                ? getInputBuffer(index, &buffer)
-                : getOutputBuffer(index, &buffer);
+                ? getBuffer(index, &buffer, kPortIndexInput)
+                : getBuffer(index, &buffer, kPortIndexOutput);
 
         if (err != OK) {
             return err;
-        }
+        }*/
+        //sp<ABuffer> buffer = new ABuffer(7077888);
+        mVideoData = malloc(7077888);
         return createByteBufferFromABuffer(
-                env, !input /* readOnly */, input /* clearBuffer */, buffer, buf);
+                env, !input /* readOnly */, input /* clearBuffer */, mVideoData, buf);
     }
 
     int SoftCode::setParameters(JNIEnv *env, jobjectArray keys, jobjectArray values) {
@@ -137,34 +167,109 @@ namespace android {
 
     int
     SoftCode::releaseOutputBuffer(jint index, jboolean render, jboolean updatePTS, jlong timeNs) {
+
+        if (index >= mPortBuffers[kPortIndexOutput].size()) {
+            return -ERANGE;
+        }
+
+        BufferInfo *info = &mPortBuffers[kPortIndexOutput][index];
+
+        if (info->mData == nullptr || !info->mOwnedByClient) {
+            return -EACCES;
+        }
+
+        // synchronization boundary for getBufferAndFormat
+        sp<MediaCodecBuffer> buffer;
+        {
+            Mutex::Autolock al(mBufferLock);
+            info->mOwnedByClient = false;
+            buffer = info->mData;
+            info->mData.clear();
+        }
+
+        // todo 渲染
+
+        // todo 更新通知
         return 0;
     }
 
     int
     SoftCode::dequeueOutputBuffer(JNIEnv *env, jobject bufferInfo, size_t *index, jlong timeoutUS) {
-        return 0;
+        List<size_t> *availBuffers = &mAvailPortBuffers[kPortIndexOutput];
+
+        if (availBuffers->empty()) {
+            return -EAGAIN;
+        }
+
+        size_t bufferIndex = *availBuffers->begin();
+        availBuffers->erase(availBuffers->begin());
+
+        BufferInfo *info = &mPortBuffers[kPortIndexOutput][bufferIndex];
+        return 1;
     }
 
-    int SoftCode::dequeueInputBuffer(size_t *index, jlong timeoutUs) {
-        return 0;
+    int SoftCode::dequeueInputBuffer(jlong timeoutUs) {
+        List<size_t> *availBuffers = &mAvailPortBuffers[kPortIndexInput];
+
+        if (availBuffers->empty()) {
+            return 0;
+        }
+
+        size_t index = *availBuffers->begin();
+        availBuffers->erase(availBuffers->begin());
+        return (jint)0;
     }
 
     int
-    SoftCode::queueInputBuffer(jint index, jint offset, jint size, jlong timestampUs, jint flags,
+    SoftCode::queueInputBuffer(JNIEnv *env, jint index, jint offset, jint size, jlong timestampUs, jint flags,
                                char **errorDetailMsg) {
-        return 0;
+
+        /*if (index >= mPortBuffers[kPortIndexInput].size()) {
+            return -ERANGE;
+        }
+
+        BufferInfo *info = &mPortBuffers[kPortIndexInput][index];
+
+        if (info->mData == nullptr || !info->mOwnedByClient) {
+            return -EACCES;
+        }
+
+        if (offset + size > info->mData->capacity()) {
+            return -EINVAL;
+        }
+
+        info->mData->setRange((size_t)offset, (size_t)size);
+        info->mData->meta()->setInt64("timeUs", timestampUs);
+        if (flags & BUFFER_FLAG_EOS) {
+            info->mData->meta()->setInt32("eos", true);
+        }
+
+        if (flags & BUFFER_FLAG_CODECCONFIG) {
+            info->mData->meta()->setInt32("csd", true);
+        }
+
+        sp<MediaCodecBuffer> buffer = info->mData;*/
+        // todo 解码
+        uint8_t * pData = (uint8_t*) env->GetDirectBufferAddress(mByteBuffer); //获取buffer数据首地址
+        size_t capacity = (size_t)env->GetDirectBufferCapacity(mByteBuffer);
+        ALOGE("queueInputBuffer Capacity %d", capacity);
+        return mFFmpegDecoder->decode(pData, (size_t)size,(ino64_t)timestampUs,flags);
     }
 
     int SoftCode::flush() {
+        returnBuffersToCodecOnPort(kPortIndexInput);
+        returnBuffersToCodecOnPort(kPortIndexOutput);
         return 0;
     }
 
     int SoftCode::stop() {
-        return 0;
+        flush();
+        // todo 停止渲染
+        return mFFmpegDecoder->stop();
     }
 
     int SoftCode::start() {
-        return 0;
+        return mFFmpegDecoder->start();
     }
 
     int SoftCode::configure(jobjectArray keys, jobjectArray values, jobject surface, jint flags) {
@@ -183,25 +288,42 @@ namespace android {
 
     }
 
+
+    void SoftCode::returnBuffersToCodecOnPort(int32_t portIndex) {
+        CHECK(portIndex == kPortIndexInput || portIndex == kPortIndexOutput);
+        Mutex::Autolock al(mBufferLock);
+
+        for (size_t i = 0; i < mPortBuffers[portIndex].size(); ++i) {
+            BufferInfo *info = &mPortBuffers[portIndex][i];
+
+            if (info->mData != nullptr) {
+                sp<MediaCodecBuffer> buffer = info->mData;
+                info->mOwnedByClient = false;
+                info->mData.clear();
+            }
+        }
+        mAvailPortBuffers[portIndex].clear();
+    }
+
     // static
-    template<typename T>
+    //template<typename T>
     int32_t SoftCode::createByteBufferFromABuffer(
-            JNIEnv *env, bool readOnly, bool clearBuffer, const sp<T> &buffer,
-            jobject *buf) const {
+            JNIEnv *env, bool readOnly, bool clearBuffer, void * videoData,
+            jobject *buf) {
         // if this is an ABuffer that doesn't actually hold any accessible memory,
         // use a null ByteBuffer
         *buf = nullptr;
 
-        if (buffer == nullptr) {
+        if (videoData == nullptr) {
             return RESULT_OK;
         }
 
-        if (buffer->base() == nullptr) {
+        /*if (buffer->base() == nullptr) {
             return RESULT_OK;
-        }
+        }*/
 
         jobject byteBuffer =
-                env->NewDirectByteBuffer(buffer->base(), buffer->capacity());
+                env->NewDirectByteBuffer(videoData, 7077888);
         if (readOnly && byteBuffer != nullptr) {
             jobject readOnlyBuffer = env->CallObjectMethod(
                     byteBuffer, mByteBufferAsReadOnlyBufferMethodID);
@@ -216,15 +338,16 @@ namespace android {
         env->DeleteLocalRef(me);
         me = env->CallObjectMethod(
                 byteBuffer, mByteBufferLimitMethodID,
-                clearBuffer ? buffer->capacity() : (buffer->offset() + buffer->size()));
+                clearBuffer ? 7077888 : (0 + 7077888));
         env->DeleteLocalRef(me);
         me = env->CallObjectMethod(
                 byteBuffer, mByteBufferPositionMethodID,
-                clearBuffer ? 0 : buffer->offset());
+                clearBuffer ? 0 : 0);
         env->DeleteLocalRef(me);
         me = nullptr;
 
         *buf = byteBuffer;
+        mByteBuffer = env->NewGlobalRef(byteBuffer);
         return RESULT_OK;
     }
 
@@ -276,7 +399,7 @@ namespace android {
         }
 
         jmethodID hashMapConstructID =
-                env->GetMethodID(hashMapClazz.get(), "<init>", "()V");
+                env->GetMethodID(hashMapClazz.get(), INIT, "()V");
 
         if (hashMapConstructID == nullptr) {
             return -EINVAL;
@@ -400,5 +523,4 @@ namespace android {
         *map = hashMap;
         return RESULT_OK;
     }
-
 }

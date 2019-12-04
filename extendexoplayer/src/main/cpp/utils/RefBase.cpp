@@ -19,10 +19,8 @@
 
 #include <memory>
 
-#include <RefBase.h>
-
-#include <Mutex.h>
-#include <macros.h>
+#include "include/RefBase.h"
+#include "../base/include/macros.h"
 
 #ifndef __unused
 #define __unused __attribute__((__unused__))

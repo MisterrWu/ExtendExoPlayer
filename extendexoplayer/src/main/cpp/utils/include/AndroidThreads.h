@@ -24,7 +24,7 @@
 # include <pthread.h>
 #endif
 
-#include <ThreadDefs.h>
+#include "ThreadDefs.h"
 
 // ---------------------------------------------------------------------------
 // C API

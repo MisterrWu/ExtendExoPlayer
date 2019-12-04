@@ -25,13 +25,7 @@ set_target_properties( ffmpeg
         ${distribution_DIR}/${ANDROID_ABI}/libffmpeg.so)
 
 # 引入头文件
-include_directories(
-        ${CMAKE_SOURCE_DIR}/ffmpeg/include
-        ${CMAKE_SOURCE_DIR}/utils/include
-        ${CMAKE_SOURCE_DIR}/base/include
-        ${CMAKE_SOURCE_DIR}/foundation/include
-        ${CMAKE_SOURCE_DIR}/media/include
-)
+include_directories(${CMAKE_SOURCE_DIR}/ffmpeg/include)
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.

@@ -5,6 +5,6 @@
 <Button
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:onClick="setup"
-    android:text="setup"/>
+    android:onClick="test"
+    android:text="Test"/>
 </RelativeLayout>

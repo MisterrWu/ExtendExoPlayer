@@ -24,7 +24,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
-#include <Compat.h>
+#include "Compat.h"
 
 // ------------------------------------------------------------------
 // C API

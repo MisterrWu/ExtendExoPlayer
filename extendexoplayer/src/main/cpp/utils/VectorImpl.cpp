@@ -16,13 +16,12 @@
 
 #define LOG_TAG "Vector"
 
-#include <VectorImpl.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "SharedBuffer.h"
+#include "include/VectorImpl.h"
 
 /*****************************************************************************/
 

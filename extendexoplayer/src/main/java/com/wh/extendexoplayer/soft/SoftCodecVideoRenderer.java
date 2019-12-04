@@ -643,7 +643,6 @@ public class SoftCodecVideoRenderer extends SoftCodecRenderer {
             long positionUs,
             long elapsedRealtimeUs,
             SoftCodec codec,
-            ByteBuffer buffer,
             int bufferIndex,
             int bufferFlags,
             long bufferPresentationTimeUs,

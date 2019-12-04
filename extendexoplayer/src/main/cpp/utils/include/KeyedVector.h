@@ -21,9 +21,9 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#include <Errors.h>
-#include <SortedVector.h>
-#include <TypeHelpers.h>
+#include "Errors.h"
+#include "SortedVector.h"
+#include "TypeHelpers.h"
 
 // ---------------------------------------------------------------------------
 

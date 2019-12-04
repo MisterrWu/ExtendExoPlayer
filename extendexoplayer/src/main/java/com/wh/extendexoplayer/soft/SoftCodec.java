@@ -1,6 +1,7 @@
 package com.wh.extendexoplayer.soft;
 
 import android.graphics.SurfaceTexture;
+import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.Bundle;
@@ -16,73 +17,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class SoftCodec {
-
-    /**
-     * Per buffer metadata includes an offset and size specifying
-     * the range of valid data in the associated codec (output) buffer.
-     */
-    public final static class BufferInfo {
-        /**
-         * Update the buffer metadata information.
-         *
-         * @param newOffset the start-offset of the data in the buffer.
-         * @param newSize   the amount of data (in bytes) in the buffer.
-         * @param newTimeUs the presentation timestamp in microseconds.
-         * @param newFlags  buffer flags associated with the buffer.  This
-         * should be a combination of  {@link #BUFFER_FLAG_KEY_FRAME} and
-         * {@link #BUFFER_FLAG_END_OF_STREAM}.
-         */
-        public void set(
-                int newOffset, int newSize, long newTimeUs, @BufferFlag int newFlags) {
-            offset = newOffset;
-            size = newSize;
-            presentationTimeUs = newTimeUs;
-            flags = newFlags;
-        }
-
-        /**
-         * The start-offset of the data in the buffer.
-         */
-        public int offset;
-
-        /**
-         * The amount of data (in bytes) in the buffer.  If this is {@code 0},
-         * the buffer has no data in it and can be discarded.  The only
-         * use of a 0-size buffer is to carry the end-of-stream marker.
-         */
-        public int size;
-
-        /**
-         * The presentation timestamp in microseconds for the buffer.
-         * This is derived from the presentation timestamp passed in
-         * with the corresponding input buffer.  This should be ignored for
-         * a 0-sized buffer.
-         */
-        public long presentationTimeUs;
-
-        /**
-         * Buffer flags associated with the buffer.  A combination of
-         * {@link #BUFFER_FLAG_KEY_FRAME} and {@link #BUFFER_FLAG_END_OF_STREAM}.
-         *
-         * <p>Encoded buffers that are key frames are marked with
-         * {@link #BUFFER_FLAG_KEY_FRAME}.
-         *
-         * <p>The last output buffer corresponding to the input buffer
-         * marked with {@link #BUFFER_FLAG_END_OF_STREAM} will also be marked
-         * with {@link #BUFFER_FLAG_END_OF_STREAM}. In some cases this could
-         * be an empty buffer, whose sole purpose is to carry the end-of-stream
-         * marker.
-         */
-        @BufferFlag
-        public int flags;
-
-        /** @hide */
-        public SoftCodec.BufferInfo dup() {
-            SoftCodec.BufferInfo copy = new SoftCodec.BufferInfo();
-            copy.set(offset, size, presentationTimeUs, flags);
-            return copy;
-        }
-    };
 
     // The follow flag constants MUST stay in sync with their equivalents
     // in SoftCodec.h !
@@ -215,7 +149,7 @@ public final class SoftCodec {
                 case CB_OUTPUT_AVAILABLE:
                 {
                     int index = msg.arg2;
-                    SoftCodec.BufferInfo info = (SoftCodec.BufferInfo) msg.obj;
+                    MediaCodec.BufferInfo info = (MediaCodec.BufferInfo) msg.obj;
                     mCallback.onOutputBufferAvailable(
                             mCodec, index, info);
                     break;
@@ -733,20 +667,26 @@ public final class SoftCodec {
      */
     @OutputBufferInfo
     public final int dequeueOutputBuffer(
-             SoftCodec.BufferInfo info, long timeoutUs) {
+             MediaCodec.BufferInfo info, long timeoutUs) {
         int res = native_dequeueOutputBuffer(info, timeoutUs);
         synchronized(mBufferLock) {
             if (res >= 0) {
                 if (mHasSurface) {
-                    mDequeuedOutputInfos.put(res, info.dup());
+                    mDequeuedOutputInfos.put(res, dup(info));
                 }
             }
         }
         return res;
     }
 
+    private MediaCodec.BufferInfo dup(MediaCodec.BufferInfo info) {
+        MediaCodec.BufferInfo copy = new MediaCodec.BufferInfo();
+        copy.set(info.offset, info.size, info.presentationTimeUs, info.flags);
+        return copy;
+    }
+
     private native final int native_dequeueOutputBuffer(
-             SoftCodec.BufferInfo info, long timeoutUs);
+             MediaCodec.BufferInfo info, long timeoutUs);
 
     /**
      * If you are done with a buffer, use this call to return the buffer to the codec
@@ -768,7 +708,7 @@ public final class SoftCodec {
      * @throws SoftCodec.CodecException upon codec error.
      */
     public final void releaseOutputBuffer(int index, boolean render) {
-        SoftCodec.BufferInfo info = null;
+        MediaCodec.BufferInfo info = null;
         synchronized(mBufferLock) {
             mDequeuedOutputBuffers.remove(index);
             if (mHasSurface) {
@@ -828,7 +768,7 @@ public final class SoftCodec {
      * @throws SoftCodec.CodecException upon codec error.
      */
     public final void releaseOutputBuffer(int index, long renderTimestampNs) {
-        SoftCodec.BufferInfo info = null;
+        MediaCodec.BufferInfo info = null;
         synchronized(mBufferLock) {
             mDequeuedOutputBuffers.remove(index);
             if (mHasSurface) {
@@ -914,8 +854,8 @@ public final class SoftCodec {
 
     private final BufferMap mDequeuedInputBuffers = new BufferMap();
     private final BufferMap mDequeuedOutputBuffers = new BufferMap();
-    private final Map<Integer, SoftCodec.BufferInfo> mDequeuedOutputInfos =
-            new HashMap<Integer, SoftCodec.BufferInfo>();
+    private final Map<Integer, MediaCodec.BufferInfo> mDequeuedOutputInfos =
+            new HashMap<Integer, MediaCodec.BufferInfo>();
     final private Object mBufferLock;
 
     private final void invalidateByteBuffer(
@@ -952,7 +892,7 @@ public final class SoftCodec {
     }
 
     private final void validateOutputByteBuffer(
-             ByteBuffer[] buffers, int index,  SoftCodec.BufferInfo info) {
+             ByteBuffer[] buffers, int index,  MediaCodec.BufferInfo info) {
         if (buffers != null && index >= 0 && index < buffers.length) {
             ByteBuffer buffer = buffers[index];
             if (buffer != null) {
@@ -1041,6 +981,7 @@ public final class SoftCodec {
      * @throws SoftCodec.CodecException upon codec error.
      */
 
+    // 解码的时候不会用到
     public ByteBuffer getOutputBuffer(int index) {
         ByteBuffer newBuffer = getBuffer(false /* input */, index);
         synchronized(mBufferLock) {
@@ -1142,7 +1083,7 @@ public final class SoftCodec {
      * a valid callback should be provided before {@link #configure} is called.
      *
      * When asynchronous callback is enabled, the client should not call
-     * {@link #dequeueInputBuffer(long)} or {@link #dequeueOutputBuffer(SoftCodec.BufferInfo, long)}.
+     * {@link #dequeueInputBuffer(long)} or {@link #dequeueOutputBuffer(MediaCodec.BufferInfo, long)}.
      * <p>
      * Also, {@link #flush} behaves differently in asynchronous mode.  After calling
      * {@code flush}, you must call {@link #start} to "resume" receiving input buffers,
@@ -1294,10 +1235,10 @@ public final class SoftCodec {
          *
          * @param codec The SoftCodec object.
          * @param index The index of the available output buffer.
-         * @param info Info regarding the available output buffer {@link SoftCodec.BufferInfo}.
+         * @param info Info regarding the available output buffer {@link MediaCodec.BufferInfo}.
          */
         public abstract void onOutputBufferAvailable(
-                 SoftCodec codec, int index,  SoftCodec.BufferInfo info);
+                 SoftCodec codec, int index,  MediaCodec.BufferInfo info);
 
         /**
          * Called when the SoftCodec encountered an error

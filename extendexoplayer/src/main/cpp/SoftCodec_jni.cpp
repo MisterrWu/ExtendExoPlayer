@@ -164,7 +164,7 @@ static void com_wh_extendexoplayer_soft_SoftCodec_queueInputBuffer(JNIEnv *env, 
 
     char *errorDetailMsg;
 
-    int ret = codec->queueInputBuffer(
+    int ret = codec->queueInputBuffer(env,
             index, offset, size, timestampUs, flags, &errorDetailMsg);
     if (ret == RESULT_OK) {
         return;
@@ -182,15 +182,7 @@ static jint com_wh_extendexoplayer_soft_SoftCodec_dequeueInputBuffer(JNIEnv *env
         jniThrowIllegalStateException(env, " dequeueInputBuffer codec is nullptr ");
         return -1;
     }
-
-    size_t index;
-    int ret = codec->dequeueInputBuffer(&index, timeoutUs);
-
-    if (ret == RESULT_OK) {
-        return (jint) index;
-    }
-
-    return RESULT_FAIL;
+    return codec->dequeueInputBuffer(timeoutUs);
 }
 
 static jint com_wh_extendexoplayer_soft_SoftCodec_dequeueOutputBuffer(JNIEnv *env, jobject thiz,
@@ -392,7 +384,7 @@ static const JNINativeMethod gMethods[] = {
                                                         (void *) com_wh_extendexoplayer_soft_SoftCodec_queueInputBuffer},
         {"native_dequeueInputBuffer",            "(J)I",
                                                         (void *) com_wh_extendexoplayer_soft_SoftCodec_dequeueInputBuffer},
-        {"native_dequeueOutputBuffer",           "(Lcom/wh/extendexoplayer/soft/SoftCodec$BufferInfo;J)I",
+        {"native_dequeueOutputBuffer",           "(Landroid/media/MediaCodec$BufferInfo;J)I",
                                                         (void *) com_wh_extendexoplayer_soft_SoftCodec_dequeueOutputBuffer},
         {"releaseOutputBuffer",                  "(IZZJ)V",
                                                         (void *) com_wh_extendexoplayer_soft_SoftCodec_releaseOutputBuffer},

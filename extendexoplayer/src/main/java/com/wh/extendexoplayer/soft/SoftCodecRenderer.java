@@ -253,7 +253,7 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
     private final FormatHolder formatHolder;
     private final TimedValueQueue<Format> formatQueue;
     private final ArrayList<Long> decodeOnlyPresentationTimestamps;
-    private final SoftCodec.BufferInfo outputBufferInfo;
+    private final MediaCodec.BufferInfo outputBufferInfo;
 
      private Format inputFormat;
     private Format outputFormat;
@@ -282,7 +282,6 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
     private long codecHotswapDeadlineMs;
     private int inputIndex;
     private int outputIndex;
-    private ByteBuffer outputBuffer;
     private boolean isDecodeOnlyOutputBuffer;
     private boolean isLastOutputBuffer;
     private boolean codecReconfigured;
@@ -337,7 +336,7 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
         formatHolder = new FormatHolder();
         formatQueue = new TimedValueQueue<>();
         decodeOnlyPresentationTimestamps = new ArrayList<>();
-        outputBufferInfo = new SoftCodec.BufferInfo();
+        outputBufferInfo = new MediaCodec.BufferInfo();
         codecReconfigurationState = RECONFIGURATION_STATE_NONE;
         codecDrainState = DRAIN_STATE_NONE;
         codecDrainAction = DRAIN_ACTION_NONE;
@@ -854,13 +853,9 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
                 || SystemClock.elapsedRealtime() - drainStartTimeMs < renderTimeLimitMs;
     }
 
-    private ByteBuffer getInputBuffer(int inputIndex) {
+    /*private ByteBuffer getInputBuffer(int inputIndex) {
         return codec.getInputBuffer(inputIndex);
-    }
-
-    private ByteBuffer getOutputBuffer(int outputIndex) {
-        return codec.getOutputBuffer(outputIndex);
-    }
+    }*/
 
     private boolean hasOutputBuffer() {
         return outputIndex >= 0;
@@ -873,7 +868,6 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
 
     private void resetOutputBuffer() {
         outputIndex = C.INDEX_UNSET;
-        outputBuffer = null;
     }
 
     private void setSourceDrmSession( DrmSession<FrameworkMediaCrypto> session) {
@@ -908,7 +902,7 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
             if (inputIndex < 0) {
                 return false;
             }
-            buffer.data = getInputBuffer(inputIndex);
+            buffer.data = codec.getInputBuffer(inputIndex);
             buffer.clear();
         }
 
@@ -1395,13 +1389,6 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
             }
 
             this.outputIndex = outputIndex;
-            outputBuffer = getOutputBuffer(outputIndex);
-            // The dequeued buffer is a media buffer. Do some initial setup.
-            // It will be processed by calling processOutputBuffer (possibly multiple times).
-            if (outputBuffer != null) {
-                outputBuffer.position(outputBufferInfo.offset);
-                outputBuffer.limit(outputBufferInfo.offset + outputBufferInfo.size);
-            }
             isDecodeOnlyOutputBuffer = isDecodeOnlyBuffer(outputBufferInfo.presentationTimeUs);
             isLastOutputBuffer =
                     lastBufferInStreamPresentationTimeUs == outputBufferInfo.presentationTimeUs;
@@ -1416,7 +1403,6 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
                                 positionUs,
                                 elapsedRealtimeUs,
                                 codec,
-                                outputBuffer,
                                 outputIndex,
                                 outputBufferInfo.flags,
                                 outputBufferInfo.presentationTimeUs,
@@ -1437,7 +1423,6 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
                             positionUs,
                             elapsedRealtimeUs,
                             codec,
-                            outputBuffer,
                             outputIndex,
                             outputBufferInfo.flags,
                             outputBufferInfo.presentationTimeUs,
@@ -1496,7 +1481,6 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
      * @param elapsedRealtimeUs {@link SystemClock#elapsedRealtime()} in microseconds, measured at the
      *     start of the current iteration of the rendering loop.
      * @param codec The {@link SoftCodec} instance.
-     * @param buffer The output buffer to process.
      * @param bufferIndex The index of the output buffer.
      * @param bufferFlags The flags attached to the output buffer.
      * @param bufferPresentationTimeUs The presentation time of the output buffer in microseconds.
@@ -1511,7 +1495,6 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
             long positionUs,
             long elapsedRealtimeUs,
             SoftCodec codec,
-            ByteBuffer buffer,
             int bufferIndex,
             int bufferFlags,
             long bufferPresentationTimeUs,
@@ -1754,8 +1737,7 @@ public abstract class SoftCodecRenderer extends BaseRenderer {
     }
 
     /**
-     * Returns whether the decoder may throw an {@link IllegalStateException} from
-     * {@link SoftCodec#dequeueOutputBuffer(SoftCodec.BufferInfo, long)} or
+     * Returns whether the decoder may throw an {@link IllegalStateException} from or
      * {@link SoftCodec#releaseOutputBuffer(int, boolean)} after receiving an input
      * buffer with {@link SoftCodec#BUFFER_FLAG_END_OF_STREAM} set.
      * <p>

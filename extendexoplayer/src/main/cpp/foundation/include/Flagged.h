@@ -17,7 +17,7 @@
 #ifndef STAGEFRIGHT_FOUNDATION_FLAGGED_H_
 #define STAGEFRIGHT_FOUNDATION_FLAGGED_H_
 
-#include <TypeTraits.h>
+#include "TypeTraits.h"
 
 namespace android {
 

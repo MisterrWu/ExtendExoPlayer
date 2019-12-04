@@ -7,12 +7,15 @@
 
 #define LOG_TAG "SoftCodec"
 
+#include <vector>
+
 #include <android/log.h>
 #include "nativehelper/ALog-priv.h"
 #include "utils/include/StrongPointer.h"
-#include <MediaCodecBuffer.h>
-#include <AMessage.h>
-#include <ABuffer.h>
+#include "FFmpegDecoder.h"
+#include "media/include/MediaCodecBuffer.h"
+#include "utils/include/List.h"
+#include "utils/include/Mutex.h"
 
 #define RESULT_OK 1
 #define RESULT_FAIL -1
@@ -23,6 +26,33 @@ namespace android {
 
     private:
 
+        enum BufferFlags {
+            BUFFER_FLAG_SYNCFRAME     = 1,
+            BUFFER_FLAG_CODECCONFIG   = 2,
+            BUFFER_FLAG_EOS           = 4,
+            BUFFER_FLAG_PARTIAL_FRAME = 8,
+            BUFFER_FLAG_MUXER_DATA    = 16,
+        };
+
+        enum {
+            kPortIndexInput         = 0,
+            kPortIndexOutput        = 1,
+        };
+
+        struct BufferInfo {
+            BufferInfo();
+
+            sp<MediaCodecBuffer> mData;
+            bool mOwnedByClient;
+        };
+
+        void *mVideoData;
+        List<size_t> mAvailPortBuffers[2];
+        std::vector<BufferInfo> mPortBuffers[2];
+        Mutex mBufferLock;
+
+        FFmpegDecoder *mFFmpegDecoder;
+        jobject mByteBuffer;
         jclass mClass;
         jweak mObject;
         jobject mSurfaceTextureClient;
@@ -35,19 +65,19 @@ namespace android {
         jmethodID mByteBufferLimitMethodID;
         jmethodID mByteBufferAsReadOnlyBufferMethodID;
 
-        int32_t getInputBuffer(jint i, sp <MediaCodecBuffer> *pSp);
+        int32_t getBuffer(jint i, sp <MediaCodecBuffer> *pSp, size_t portIndex);
 
-        int32_t getOutputBuffer(jint i, sp <MediaCodecBuffer> *pSp);
-
-        template<typename T>
+        //template<typename T>
         int32_t createByteBufferFromABuffer(
-                JNIEnv *env, bool readOnly, bool clearBuffer, const sp <T> &buffer,
-                jobject *buf) const;
+                JNIEnv *env, bool readOnly, bool clearBuffer, void *videoData,
+                jobject *buf);
 
         void cacheJavaObjects(JNIEnv *env);
 
         int32_t ConvertMessageToMap(
                 JNIEnv *env, const sp<AMessage> &msg, jobject *map);
+
+        void returnBuffersToCodecOnPort(int32_t portIndex);
 
     public:
         SoftCode(
@@ -68,9 +98,9 @@ namespace android {
 
         int dequeueOutputBuffer(JNIEnv *env, jobject bufferInfo, size_t *index, jlong timeoutUS);
 
-        int dequeueInputBuffer(size_t *index, jlong timeoutUs);
+        int dequeueInputBuffer(jlong timeoutUs);
 
-        int queueInputBuffer(jint index, jint offset, jint size, jlong timestampUs, jint flags,
+        int queueInputBuffer(JNIEnv *env, jint index, jint offset, jint size, jlong timestampUs, jint flags,
                              char **errorDetailMsg);
 
         int flush();
@@ -86,13 +116,6 @@ namespace android {
         int setSurface(jobject surface);
 
         void release();
-
-        struct BufferInfo {
-            BufferInfo();
-
-            sp <MediaCodecBuffer> mData;
-            bool mOwnedByClient;
-        };
     };
 }
 #endif //EXTENDEXOPLAYER_SOFTCODEC_H

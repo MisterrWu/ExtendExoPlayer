@@ -20,8 +20,8 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#include <TypeHelpers.h>
-#include <VectorImpl.h>
+#include "TypeHelpers.h"
+#include "VectorImpl.h"
 
 /*
  * Used to blacklist some functions from CFI.

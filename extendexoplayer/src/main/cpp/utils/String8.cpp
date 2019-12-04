@@ -20,7 +20,7 @@
 #include "include/String8.h"
 
 #include "include/Compat.h"
-#include "String16.h"
+#include "include/String16.h"
 
 #include <cctype>
 

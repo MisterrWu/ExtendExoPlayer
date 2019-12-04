@@ -19,8 +19,8 @@
 
 #include <stdint.h>
 #include <sys/types.h>
-#include <graphics.h>
-#include <thread_defs.h>
+#include "graphics.h"
+#include "thread_defs.h"
 
 // ---------------------------------------------------------------------------
 // C API

@@ -25,7 +25,7 @@
  *
  */
 
-#include <AndroidThreads.h>
+#include "AndroidThreads.h"
 
 #ifdef __cplusplus
 #include "Condition.h"

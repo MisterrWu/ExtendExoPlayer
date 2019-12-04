@@ -80,6 +80,6 @@ public class MainActivity extends Activity implements AdapterView.OnItemClickLis
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         String path = mAdapter.getItem(position);
-        VideoPlayerActivity.start(this,path);
+        NativeTestActivity.start(this,path);
     }
 }
