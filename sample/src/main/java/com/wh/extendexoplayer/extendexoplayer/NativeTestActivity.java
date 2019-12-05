@@ -89,7 +89,6 @@ public class NativeTestActivity extends Activity {
     }
 
     private void doWork() {
-        Log.e(TAG, "doWork: " + codec);
         if(codec == null){
             status = STATUS_STOP;
             return;

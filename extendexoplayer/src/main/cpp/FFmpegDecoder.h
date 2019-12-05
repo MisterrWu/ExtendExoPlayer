@@ -37,8 +37,6 @@ namespace android {
         int decode(uint8_t *data, size_t size, ino64_t timestampUs, int32_t flags);
 
         int stop();
-
-        AString getErrorType(int err);
     };
 }
 
