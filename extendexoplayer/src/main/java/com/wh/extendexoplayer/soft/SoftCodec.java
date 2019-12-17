@@ -8,10 +8,13 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 import android.view.Surface;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,9 +60,9 @@ public final class SoftCodec {
     /**
      * This indicates that the buffer contains non-media data for the
      * muxer to process.
-     *
+     * <p>
      * All muxer data should start with a FOURCC header that determines the type of data.
-     *
+     * <p>
      * For example, when it contains Exif data sent to a MediaMuxer track of
      * {@link MediaFormat#MIMETYPE_IMAGE_ANDROID_HEIC} type, the data must start with
      * Exif header ("Exif\0\0"), followed by the TIFF header (See JEITA CP-3451C Section 4.5.2.)
@@ -68,9 +71,12 @@ public final class SoftCodec {
      */
     public static final int BUFFER_FLAG_MUXER_DATA = 16;
 
-    /** @hide */
+    /**
+     * @hide
+     */
     @Retention(RetentionPolicy.SOURCE)
-    public @interface BufferFlag {}
+    public @interface BufferFlag {
+    }
 
     private EventHandler mEventHandler;
     private EventHandler mOnFrameRenderedHandler;
@@ -99,21 +105,19 @@ public final class SoftCodec {
         }
 
         @Override
-        public void handleMessage( Message msg) {
+        public void handleMessage(Message msg) {
             switch (msg.what) {
-                case EVENT_CALLBACK:
-                {
+                case EVENT_CALLBACK: {
                     handleCallback(msg);
                     break;
                 }
-                case EVENT_SET_CALLBACK:
-                {
+                case EVENT_SET_CALLBACK: {
                     mCallback = (SoftCodec.Callback) msg.obj;
                     break;
                 }
                 case EVENT_FRAME_RENDERED:
                     synchronized (mListenerLock) {
-                        Map<String, Object> map = (Map<String, Object>)msg.obj;
+                        Map<String, Object> map = (Map<String, Object>) msg.obj;
                         for (int i = 0; ; ++i) {
                             Object mediaTimeUs = map.get(i + "-media-time-us");
                             Object systemNano = map.get(i + "-system-nano");
@@ -122,32 +126,29 @@ public final class SoftCodec {
                                 break;
                             }
                             mOnFrameRenderedListener.onFrameRendered(
-                                    mCodec, (long)mediaTimeUs, (long)systemNano);
+                                    mCodec, (long) mediaTimeUs, (long) systemNano);
                         }
                         break;
                     }
-                default:
-                {
+                default: {
                     break;
                 }
             }
         }
 
-        private void handleCallback( Message msg) {
+        private void handleCallback(Message msg) {
             if (mCallback == null) {
                 return;
             }
 
             switch (msg.arg1) {
-                case CB_INPUT_AVAILABLE:
-                {
+                case CB_INPUT_AVAILABLE: {
                     int index = msg.arg2;
                     mCallback.onInputBufferAvailable(mCodec, index);
                     break;
                 }
 
-                case CB_OUTPUT_AVAILABLE:
-                {
+                case CB_OUTPUT_AVAILABLE: {
                     int index = msg.arg2;
                     MediaCodec.BufferInfo info = (MediaCodec.BufferInfo) msg.obj;
                     mCallback.onOutputBufferAvailable(
@@ -155,20 +156,17 @@ public final class SoftCodec {
                     break;
                 }
 
-                case CB_ERROR:
-                {
+                case CB_ERROR: {
                     mCallback.onError(mCodec, (SoftCodec.CodecException) msg.obj);
                     break;
                 }
 
-                case CB_OUTPUT_FORMAT_CHANGE:
-                {
-                    mCallback.onOutputFormatChanged(mCodec,null/* todo */);
+                case CB_OUTPUT_FORMAT_CHANGE: {
+                    mCallback.onOutputFormatChanged(mCodec, null/* todo */);
                     break;
                 }
 
-                default:
-                {
+                default: {
                     break;
                 }
             }
@@ -181,18 +179,19 @@ public final class SoftCodec {
      * If you know the exact name of the component you want to instantiate
      * use this method to instantiate it. Use with caution.
      * Likely to be used with information obtained from {@link android.media.MediaCodecList}
+     *
      * @param name The name of the codec to be instantiated.
      * @throws IllegalArgumentException if name is not valid.
-     * @throws NullPointerException if name is null.
+     * @throws NullPointerException     if name is null.
      */
 
-    public static SoftCodec createByCodecName( String name){
+    public static SoftCodec createByCodecName(String name) {
         return new SoftCodec(
                 name, false /* nameIsType */, false /* unused */);
     }
 
     private SoftCodec(
-             String name, boolean nameIsType, boolean encoder) {
+            String name, boolean nameIsType, boolean encoder) {
         Looper looper;
         if ((looper = Looper.myLooper()) != null) {
             mEventHandler = new EventHandler(this, looper);
@@ -216,7 +215,7 @@ public final class SoftCodec {
 
     /**
      * Free up resources used by the codec instance.
-     *
+     * <p>
      * Make sure you call this when you're done to free up any opened
      * component instance instead of relying on the garbage collector
      * to do this for you at some point in the future.
@@ -233,17 +232,20 @@ public final class SoftCodec {
      */
     public static final int CONFIGURE_FLAG_ENCODE = 1;
 
-    /** @hide */
+    /**
+     * @hide
+     */
     @Retention(RetentionPolicy.SOURCE)
-    public @interface ConfigureFlag {}
+    public @interface ConfigureFlag {
+    }
 
     /**
      * Configures a component.
      *
-     * @param format The format of the input data (decoder) or the desired
-     *               format of the output data (encoder). Passing {@code null}
-     *               as {@code format} is equivalent to passing an
-     *               {@link MediaFormat#MediaFormat an empty mediaformat}.
+     * @param format  The format of the input data (decoder) or the desired
+     *                format of the output data (encoder). Passing {@code null}
+     *                as {@code format} is equivalent to passing an
+     *                {@link MediaFormat#MediaFormat an empty mediaformat}.
      * @param surface Specify a surface on which to render the output of this
      *                decoder. Pass {@code null} as {@code surface} if the
      *                codec does not generate raw video output (e.g. not a video
@@ -251,30 +253,32 @@ public final class SoftCodec {
      *                {@link ByteBuffer} output.
      * @param flags   Specify {@link #CONFIGURE_FLAG_ENCODE} to configure the
      *                component as an encoder.
-     * @throws IllegalArgumentException if the surface has been released (or is invalid),
-     * or the format is unacceptable (e.g. missing a mandatory key),
-     * or the flags are not set properly
-     * (e.g. missing {@link #CONFIGURE_FLAG_ENCODE} for an encoder).
-     * @throws IllegalStateException if not in the Uninitialized state.
+     * @throws IllegalArgumentException  if the surface has been released (or is invalid),
+     *                                   or the format is unacceptable (e.g. missing a mandatory key),
+     *                                   or the flags are not set properly
+     *                                   (e.g. missing {@link #CONFIGURE_FLAG_ENCODE} for an encoder).
+     * @throws IllegalStateException     if not in the Uninitialized state.
      * @throws SoftCodec.CryptoException upon DRM error.
-     * @throws SoftCodec.CodecException upon codec error.
+     * @throws SoftCodec.CodecException  upon codec error.
      */
     public void configure(
-             MediaFormat format,
-             Surface surface,  @ConfigureFlag int flags) {
+            MediaFormat format,
+            Surface surface, @ConfigureFlag int flags) {
         String[] keys = null;
         Object[] values = null;
 
         if (format != null) {
-            Map<String, Object> formatMap = null /* todo ormat.getMap()*/;
-            keys = new String[formatMap.size()];
-            values = new Object[formatMap.size()];
+            Map<String, Object> formatMap = getFormatMap(format);
+            if(formatMap != null) {
+                keys = new String[formatMap.size()];
+                values = new Object[formatMap.size()];
 
-            int i = 0;
-            for (Map.Entry<String, Object> entry: formatMap.entrySet()) {
-                keys[i] = entry.getKey();
-                values[i] = entry.getValue();
-                ++i;
+                int i = 0;
+                for (Map.Entry<String, Object> entry : formatMap.entrySet()) {
+                    keys[i] = entry.getKey();
+                    values[i] = entry.getValue();
+                    ++i;
+                }
             }
         }
 
@@ -283,47 +287,57 @@ public final class SoftCodec {
         native_configure(keys, values, surface, flags);
     }
 
+    private Map<String, Object> getFormatMap(MediaFormat format) {
+        Map<String, Object> map = new HashMap<>();
+        Log.e("SoftCodec", "format: " + format.toString());
+
+        return map;
+    }
+
     /**
-     *  Dynamically sets the output surface of a codec.
-     *  <p>
-     *  This can only be used if the codec was configured with an output surface.  The
-     *  new output surface should have a compatible usage type to the original output surface.
-     *  E.g. codecs may not support switching from a SurfaceTexture (GPU readable) output
-     *  to ImageReader (software readable) output.
-     *  @param surface the output surface to use. It must not be {@code null}.
-     *  @throws IllegalStateException if the codec does not support setting the output
-     *            surface in the current state.
-     *  @throws IllegalArgumentException if the new surface is not of a suitable type for the codec.
+     * Dynamically sets the output surface of a codec.
+     * <p>
+     * This can only be used if the codec was configured with an output surface.  The
+     * new output surface should have a compatible usage type to the original output surface.
+     * E.g. codecs may not support switching from a SurfaceTexture (GPU readable) output
+     * to ImageReader (software readable) output.
+     *
+     * @param surface the output surface to use. It must not be {@code null}.
+     * @throws IllegalStateException    if the codec does not support setting the output
+     *                                  surface in the current state.
+     * @throws IllegalArgumentException if the new surface is not of a suitable type for the codec.
      */
-    public void setOutputSurface( Surface surface) {
+    public void setOutputSurface(Surface surface) {
         if (!mHasSurface) {
             throw new IllegalStateException("codec was not configured for an output surface");
         }
         native_setSurface(surface);
     }
 
-    private native void native_setSurface( Surface surface);
+    private native void native_setSurface(Surface surface);
 
     private native void native_setCallback(SoftCodec.Callback cb);
 
     private native void native_configure(
-             String[] keys,  Object[] values,
-             Surface surface, @ConfigureFlag int flags);
+            String[] keys, Object[] values,
+            Surface surface, @ConfigureFlag int flags);
 
     /**
      * After successfully configuring the component, call {@code start}.
      * <p>
      * Call {@code start} also if the codec is configured in asynchronous mode,
      * and it has just been flushed, to resume requesting input buffers.
-     * @throws IllegalStateException if not in the Configured state
-     *         or just after {@link #flush} for a codec that is configured
-     *         in asynchronous mode.
+     *
+     * @throws IllegalStateException    if not in the Configured state
+     *                                  or just after {@link #flush} for a codec that is configured
+     *                                  in asynchronous mode.
      * @throws SoftCodec.CodecException upon codec error. Note that some codec errors
-     * for start may be attributed to future method calls.
+     *                                  for start may be attributed to future method calls.
      */
     public final void start() {
         native_start();
     }
+
     private native void native_start();
 
     /**
@@ -331,6 +345,7 @@ public final class SoftCodec {
      * remains active and ready to be {@link #start}ed again.
      * To ensure that it is available to other client call {@link #release}
      * and don't just rely on garbage collection to eventually do this for you.
+     *
      * @throws IllegalStateException if in the Released state.
      */
     public final void stop() {
@@ -371,11 +386,11 @@ public final class SoftCodec {
      * automatically if it is configured with an input surface.  Otherwise, it
      * will resume when {@link #dequeueInputBuffer dequeueInputBuffer} is called.
      *
-     * @throws IllegalStateException if not in the Executing state.
+     * @throws IllegalStateException    if not in the Executing state.
      * @throws SoftCodec.CodecException upon codec error.
      */
     public final void flush() {
-        synchronized(mBufferLock) {
+        synchronized (mBufferLock) {
             mDequeuedInputBuffers.clear();
             mDequeuedOutputBuffers.clear();
         }
@@ -388,7 +403,7 @@ public final class SoftCodec {
      * Thrown when an internal codec error occurs.
      */
     public final static class CodecException extends IllegalStateException {
-        CodecException(int errorCode, int actionCode,  String detailMessage) {
+        CodecException(int errorCode, int actionCode, String detailMessage) {
             super(detailMessage);
             mErrorCode = errorCode;
             mActionCode = actionCode;
@@ -430,7 +445,7 @@ public final class SoftCodec {
          * since this string will not be localized or generally
          * comprehensible to end-users.
          */
-        public  String getDiagnosticInfo() {
+        public String getDiagnosticInfo() {
             return mDiagnosticInfo;
         }
 
@@ -447,7 +462,8 @@ public final class SoftCodec {
         public static final int ERROR_RECLAIMED = 1101;
 
         @Retention(RetentionPolicy.SOURCE)
-        public @interface ReasonCode {}
+        public @interface ReasonCode {
+        }
 
         /* Must be in sync with android_media_MediaCodec.cpp */
         private final static int ACTION_TRANSIENT = 1;
@@ -462,7 +478,7 @@ public final class SoftCodec {
      * Thrown when a crypto error occurs while queueing a secure input buffer.
      */
     public final static class CryptoException extends RuntimeException {
-        public CryptoException(int errorCode,  String detailMessage) {
+        public CryptoException(int errorCode, String detailMessage) {
             super(detailMessage);
             mErrorCode = errorCode;
         }
@@ -514,7 +530,8 @@ public final class SoftCodec {
         public static final int ERROR_UNSUPPORTED_OPERATION = 6;
 
         @Retention(RetentionPolicy.SOURCE)
-        public @interface CryptoErrorCode {}
+        public @interface CryptoErrorCode {
+        }
 
         /**
          * Retrieve the error code associated with a CryptoException
@@ -565,30 +582,30 @@ public final class SoftCodec {
      * mistaken for a system time. (See {@linkplain #releaseOutputBuffer(int, long)
      * SurfaceView specifics}).</strong>
      *
-     * @param index The index of a client-owned input buffer previously returned
-     *              in a call to {@link #dequeueInputBuffer}.
-     * @param offset The byte offset into the input buffer at which the data starts.
-     * @param size The number of bytes of valid input data.
+     * @param index              The index of a client-owned input buffer previously returned
+     *                           in a call to {@link #dequeueInputBuffer}.
+     * @param offset             The byte offset into the input buffer at which the data starts.
+     * @param size               The number of bytes of valid input data.
      * @param presentationTimeUs The presentation timestamp in microseconds for this
      *                           buffer. This is normally the media time at which this
      *                           buffer should be presented (rendered). When using an output
      *                           surface, this will be propagated as the {@link
      *                           SurfaceTexture#getTimestamp timestamp} for the frame (after
      *                           conversion to nanoseconds).
-     * @param flags A bitmask of flags
-     *              {@link #BUFFER_FLAG_CODEC_CONFIG} and {@link #BUFFER_FLAG_END_OF_STREAM}.
-     *              While not prohibited, most codecs do not use the
-     *              {@link #BUFFER_FLAG_KEY_FRAME} flag for input buffers.
-     * @throws IllegalStateException if not in the Executing state.
-     * @throws SoftCodec.CodecException upon codec error.
+     * @param flags              A bitmask of flags
+     *                           {@link #BUFFER_FLAG_CODEC_CONFIG} and {@link #BUFFER_FLAG_END_OF_STREAM}.
+     *                           While not prohibited, most codecs do not use the
+     *                           {@link #BUFFER_FLAG_KEY_FRAME} flag for input buffers.
+     * @throws IllegalStateException     if not in the Executing state.
+     * @throws SoftCodec.CodecException  upon codec error.
      * @throws SoftCodec.CryptoException if a crypto object has been specified in
-     *         {@link #configure}
+     *                                   {@link #configure}
      */
     public final void queueInputBuffer(
             int index,
             int offset, int size, long presentationTimeUs, int flags)
             throws SoftCodec.CryptoException {
-        synchronized(mBufferLock) {
+        synchronized (mBufferLock) {
             mDequeuedInputBuffers.remove(index);
         }
         native_queueInputBuffer(
@@ -601,8 +618,8 @@ public final class SoftCodec {
             throws SoftCodec.CryptoException;
 
     public static final int CRYPTO_MODE_UNENCRYPTED = 0;
-    public static final int CRYPTO_MODE_AES_CTR     = 1;
-    public static final int CRYPTO_MODE_AES_CBC     = 2;
+    public static final int CRYPTO_MODE_AES_CTR = 1;
+    public static final int CRYPTO_MODE_AES_CBC = 2;
 
     /**
      * Returns the index of an input buffer to be filled with valid data
@@ -610,9 +627,10 @@ public final class SoftCodec {
      * This method will return immediately if timeoutUs == 0, wait indefinitely
      * for the availability of an input buffer if timeoutUs &lt; 0 or wait up
      * to "timeoutUs" microseconds if timeoutUs &gt; 0.
+     *
      * @param timeoutUs The timeout in microseconds, a negative timeout indicates "infinite".
-     * @throws IllegalStateException if not in the Executing state,
-     *         or codec is configured in asynchronous mode.
+     * @throws IllegalStateException    if not in the Executing state,
+     *                                  or codec is configured in asynchronous mode.
      * @throws SoftCodec.CodecException upon codec error.
      */
     public final int dequeueInputBuffer(long timeoutUs) {
@@ -625,7 +643,7 @@ public final class SoftCodec {
      * If a non-negative timeout had been specified in the call
      * to {@link #dequeueOutputBuffer}, indicates that the call timed out.
      */
-    public static final int INFO_TRY_AGAIN_LATER        = -1;
+    public static final int INFO_TRY_AGAIN_LATER = -1;
 
     /**
      * The output format has changed, subsequent data will follow the new
@@ -634,7 +652,7 @@ public final class SoftCodec {
      * get the format for a specific output buffer.  This frees you from
      * having to track output format changes.
      */
-    public static final int INFO_OUTPUT_FORMAT_CHANGED  = -2;
+    public static final int INFO_OUTPUT_FORMAT_CHANGED = -2;
 
     /**
      * The output buffers have changed, the client must refer to the new
@@ -651,25 +669,29 @@ public final class SoftCodec {
      */
     public static final int INFO_OUTPUT_BUFFERS_CHANGED = -3;
 
-    /** @hide */
+    /**
+     * @hide
+     */
     @Retention(RetentionPolicy.SOURCE)
-    public @interface OutputBufferInfo {}
+    public @interface OutputBufferInfo {
+    }
 
     /**
      * Dequeue an output buffer, block at most "timeoutUs" microseconds.
      * Returns the index of an output buffer that has been successfully
      * decoded or one of the INFO_* constants.
-     * @param info Will be filled with buffer meta data.
+     *
+     * @param info      Will be filled with buffer meta data.
      * @param timeoutUs The timeout in microseconds, a negative timeout indicates "infinite".
-     * @throws IllegalStateException if not in the Executing state,
-     *         or codec is configured in asynchronous mode.
+     * @throws IllegalStateException    if not in the Executing state,
+     *                                  or codec is configured in asynchronous mode.
      * @throws SoftCodec.CodecException upon codec error.
      */
     @OutputBufferInfo
     public final int dequeueOutputBuffer(
-             MediaCodec.BufferInfo info, long timeoutUs) {
+            MediaCodec.BufferInfo info, long timeoutUs) {
         int res = native_dequeueOutputBuffer(info, timeoutUs);
-        synchronized(mBufferLock) {
+        synchronized (mBufferLock) {
             if (res >= 0) {
                 if (mHasSurface) {
                     mDequeuedOutputInfos.put(res, dup(info));
@@ -686,7 +708,7 @@ public final class SoftCodec {
     }
 
     private native final int native_dequeueOutputBuffer(
-             MediaCodec.BufferInfo info, long timeoutUs);
+            MediaCodec.BufferInfo info, long timeoutUs);
 
     /**
      * If you are done with a buffer, use this call to return the buffer to the codec
@@ -694,22 +716,22 @@ public final class SoftCodec {
      * output surface, setting {@code render} to {@code true} will first send the buffer
      * to that output surface. The surface will release the buffer back to the codec once
      * it is no longer used/displayed.
-     *
+     * <p>
      * Once an output buffer is released to the codec, it MUST NOT
      * be used until it is later retrieved by {@link #getOutputBuffer} in response
      * to a {@link #dequeueOutputBuffer} return value or a
      * {@link SoftCodec.Callback#onOutputBufferAvailable} callback.
      *
-     * @param index The index of a client-owned output buffer previously returned
-     *              from a call to {@link #dequeueOutputBuffer}.
+     * @param index  The index of a client-owned output buffer previously returned
+     *               from a call to {@link #dequeueOutputBuffer}.
      * @param render If a valid surface was specified when configuring the codec,
      *               passing true renders this output buffer to the surface.
-     * @throws IllegalStateException if not in the Executing state.
+     * @throws IllegalStateException    if not in the Executing state.
      * @throws SoftCodec.CodecException upon codec error.
      */
     public final void releaseOutputBuffer(int index, boolean render) {
         MediaCodec.BufferInfo info = null;
-        synchronized(mBufferLock) {
+        synchronized (mBufferLock) {
             mDequeuedOutputBuffers.remove(index);
             if (mHasSurface) {
                 info = mDequeuedOutputInfos.remove(index);
@@ -723,7 +745,7 @@ public final class SoftCodec {
      * and return it to the codec to render it on the output surface. If you
      * have not specified an output surface when configuring this video codec,
      * this call will simply return the buffer to the codec.<p>
-     *
+     * <p>
      * The timestamp may have special meaning depending on the destination surface.
      *
      * <table>
@@ -754,22 +776,22 @@ public final class SoftCodec {
      * </ul>
      * </td></tr>
      * </table>
-     *
+     * <p>
      * Once an output buffer is released to the codec, it MUST NOT
      * be used until it is later retrieved by {@link #getOutputBuffer} in response
      * to a {@link #dequeueOutputBuffer} return value or a
      * {@link SoftCodec.Callback#onOutputBufferAvailable} callback.
      *
-     * @param index The index of a client-owned output buffer previously returned
-     *              from a call to {@link #dequeueOutputBuffer}.
+     * @param index             The index of a client-owned output buffer previously returned
+     *                          from a call to {@link #dequeueOutputBuffer}.
      * @param renderTimestampNs The timestamp to associate with this buffer when
-     *              it is sent to the Surface.
-     * @throws IllegalStateException if not in the Executing state.
+     *                          it is sent to the Surface.
+     * @throws IllegalStateException    if not in the Executing state.
      * @throws SoftCodec.CodecException upon codec error.
      */
     public final void releaseOutputBuffer(int index, long renderTimestampNs) {
         MediaCodec.BufferInfo info = null;
-        synchronized(mBufferLock) {
+        synchronized (mBufferLock) {
             mDequeuedOutputBuffers.remove(index);
             if (mHasSurface) {
                 info = mDequeuedOutputInfos.remove(index);
@@ -790,8 +812,8 @@ public final class SoftCodec {
      * for the codec.  Do this to determine what optional
      * configuration parameters were supported by the codec.
      *
-     * @throws IllegalStateException if not in the Executing or
-     *                               Configured state.
+     * @throws IllegalStateException    if not in the Executing or
+     *                                  Configured state.
      * @throws SoftCodec.CodecException upon codec error.
      */
 
@@ -818,7 +840,7 @@ public final class SoftCodec {
             }
 
 
-            public void setByteBuffer( ByteBuffer buffer) {
+            public void setByteBuffer(ByteBuffer buffer) {
                 free();
                 mByteBuffer = buffer;
             }
@@ -835,7 +857,7 @@ public final class SoftCodec {
             }
         }
 
-        public void put(int index,  ByteBuffer newBuffer) {
+        public void put(int index, ByteBuffer newBuffer) {
             CodecBuffer buffer = mMap.get(index);
             if (buffer == null) { // likely
                 buffer = new CodecBuffer();
@@ -845,7 +867,7 @@ public final class SoftCodec {
         }
 
         public void clear() {
-            for (CodecBuffer buffer: mMap.values()) {
+            for (CodecBuffer buffer : mMap.values()) {
                 buffer.free();
             }
             mMap.clear();
@@ -859,7 +881,7 @@ public final class SoftCodec {
     final private Object mBufferLock;
 
     private final void invalidateByteBuffer(
-             ByteBuffer[] buffers, int index) {
+            ByteBuffer[] buffers, int index) {
         if (buffers != null && index >= 0 && index < buffers.length) {
             ByteBuffer buffer = buffers[index];
             if (buffer != null) {
@@ -869,7 +891,7 @@ public final class SoftCodec {
     }
 
     private final void validateInputByteBuffer(
-             ByteBuffer[] buffers, int index) {
+            ByteBuffer[] buffers, int index) {
         if (buffers != null && index >= 0 && index < buffers.length) {
             ByteBuffer buffer = buffers[index];
             if (buffer != null) {
@@ -880,8 +902,8 @@ public final class SoftCodec {
     }
 
     private final void revalidateByteBuffer(
-             ByteBuffer[] buffers, int index) {
-        synchronized(mBufferLock) {
+            ByteBuffer[] buffers, int index) {
+        synchronized (mBufferLock) {
             if (buffers != null && index >= 0 && index < buffers.length) {
                 ByteBuffer buffer = buffers[index];
                 if (buffer != null) {
@@ -892,7 +914,7 @@ public final class SoftCodec {
     }
 
     private final void validateOutputByteBuffer(
-             ByteBuffer[] buffers, int index,  MediaCodec.BufferInfo info) {
+            ByteBuffer[] buffers, int index, MediaCodec.BufferInfo info) {
         if (buffers != null && index >= 0 && index < buffers.length) {
             ByteBuffer buffer = buffers[index];
             if (buffer != null) {
@@ -902,9 +924,9 @@ public final class SoftCodec {
         }
     }
 
-    private final void invalidateByteBuffers( ByteBuffer[] buffers) {
+    private final void invalidateByteBuffers(ByteBuffer[] buffers) {
         if (buffers != null) {
-            for (ByteBuffer buffer: buffers) {
+            for (ByteBuffer buffer : buffers) {
                 if (buffer != null) {
                     /* todo buffer.setAccessible(false);*/
                 }
@@ -912,23 +934,23 @@ public final class SoftCodec {
         }
     }
 
-    private final void freeByteBuffer( ByteBuffer buffer) {
+    private final void freeByteBuffer(ByteBuffer buffer) {
         if (buffer != null /* && buffer.isDirect() */) {
             // all of our ByteBuffers are direct
             /* todo java.nio.NioUtils.freeDirectBuffer(buffer);*/
         }
     }
 
-    private final void freeByteBuffers( ByteBuffer[] buffers) {
+    private final void freeByteBuffers(ByteBuffer[] buffers) {
         if (buffers != null) {
-            for (ByteBuffer buffer: buffers) {
+            for (ByteBuffer buffer : buffers) {
                 freeByteBuffer(buffer);
             }
         }
     }
 
     private final void freeAllTrackedBuffers() {
-        synchronized(mBufferLock) {
+        synchronized (mBufferLock) {
             mDequeuedInputBuffers.clear();
             mDequeuedOutputBuffers.clear();
         }
@@ -937,7 +959,7 @@ public final class SoftCodec {
     /**
      * Returns a {@link java.nio.Buffer#clear cleared}, writable ByteBuffer
      * object for a dequeued input buffer index to contain the input data.
-     *
+     * <p>
      * After calling this method any ByteBuffer or Image object
      * previously returned for the same input index MUST no longer
      * be used.
@@ -945,17 +967,15 @@ public final class SoftCodec {
      * @param index The index of a client-owned input buffer previously
      *              returned from a call to {@link #dequeueInputBuffer},
      *              or received via an onInputBufferAvailable callback.
-     *
      * @return the input buffer, or null if the index is not a dequeued
      * input buffer, or if the codec is configured for surface input.
-     *
-     * @throws IllegalStateException if not in the Executing state.
+     * @throws IllegalStateException    if not in the Executing state.
      * @throws SoftCodec.CodecException upon codec error.
      */
 
     public ByteBuffer getInputBuffer(int index) {
         ByteBuffer newBuffer = getBuffer(true /* input */, index);
-        synchronized(mBufferLock) {
+        synchronized (mBufferLock) {
             mDequeuedInputBuffers.put(index, newBuffer);
         }
         return newBuffer;
@@ -965,7 +985,7 @@ public final class SoftCodec {
      * Returns a read-only ByteBuffer for a dequeued output buffer
      * index. The position and limit of the returned buffer are set
      * to the valid output data.
-     *
+     * <p>
      * After calling this method, any ByteBuffer or Image object
      * previously returned for the same output index MUST no longer
      * be used.
@@ -973,18 +993,16 @@ public final class SoftCodec {
      * @param index The index of a client-owned output buffer previously
      *              returned from a call to {@link #dequeueOutputBuffer},
      *              or received via an onOutputBufferAvailable callback.
-     *
      * @return the output buffer, or null if the index is not a dequeued
      * output buffer, or the codec is configured with an output surface.
-     *
-     * @throws IllegalStateException if not in the Executing state.
+     * @throws IllegalStateException    if not in the Executing state.
      * @throws SoftCodec.CodecException upon codec error.
      */
 
     // 解码的时候不会用到
     public ByteBuffer getOutputBuffer(int index) {
         ByteBuffer newBuffer = getBuffer(false /* input */, index);
-        synchronized(mBufferLock) {
+        synchronized (mBufferLock) {
             mDequeuedOutputBuffers.put(index, newBuffer);
         }
         return newBuffer;
@@ -993,7 +1011,7 @@ public final class SoftCodec {
     /**
      * The content is scaled to the surface dimensions
      */
-    public static final int VIDEO_SCALING_MODE_SCALE_TO_FIT               = 1;
+    public static final int VIDEO_SCALING_MODE_SCALE_TO_FIT = 1;
 
     /**
      * The content is scaled, maintaining its aspect ratio, the whole
@@ -1008,7 +1026,8 @@ public final class SoftCodec {
     public static final int VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING = 2;
 
     @Retention(RetentionPolicy.SOURCE)
-    public @interface VideoScalingMode {}
+    public @interface VideoScalingMode {
+    }
 
     /**
      * If a surface has been specified in a previous call to {@link #configure}
@@ -1023,7 +1042,7 @@ public final class SoftCodec {
      * after each {@link #INFO_OUTPUT_FORMAT_CHANGED} event.
      *
      * @throws IllegalArgumentException if mode is not recognized.
-     * @throws IllegalStateException if in the Released state.
+     * @throws IllegalStateException    if in the Released state.
      */
     public native final void setVideoScalingMode(@VideoScalingMode int mode);
 
@@ -1058,7 +1077,7 @@ public final class SoftCodec {
      * @param params The bundle of parameters to set.
      * @throws IllegalStateException if in the Released state.
      */
-    public final void setParameters( Bundle params) {
+    public final void setParameters(Bundle params) {
         if (params == null) {
             return;
         }
@@ -1067,7 +1086,7 @@ public final class SoftCodec {
         Object[] values = new Object[params.size()];
 
         int i = 0;
-        for (final String key: params.keySet()) {
+        for (final String key : params.keySet()) {
             keys[i] = key;
             values[i] = params.get(key);
             ++i;
@@ -1078,10 +1097,10 @@ public final class SoftCodec {
 
     /**
      * Sets an asynchronous callback for actionable SoftCodec events.
-     *
+     * <p>
      * If the client intends to use the component in asynchronous mode,
      * a valid callback should be provided before {@link #configure} is called.
-     *
+     * <p>
      * When asynchronous callback is enabled, the client should not call
      * {@link #dequeueInputBuffer(long)} or {@link #dequeueOutputBuffer(MediaCodec.BufferInfo, long)}.
      * <p>
@@ -1089,14 +1108,14 @@ public final class SoftCodec {
      * {@code flush}, you must call {@link #start} to "resume" receiving input buffers,
      * even if an input surface was created.
      *
-     * @param cb The callback that will run.  Use {@code null} to clear a previously
-     *           set callback (before {@link #configure configure} is called and run
-     *           in synchronous mode).
+     * @param cb      The callback that will run.  Use {@code null} to clear a previously
+     *                set callback (before {@link #configure configure} is called and run
+     *                in synchronous mode).
      * @param handler Callbacks will happen on the handler's thread. If {@code null},
-     *           callbacks are done on the default thread (the caller's thread or the
-     *           main thread.)
+     *                callbacks are done on the default thread (the caller's thread or the
+     *                main thread.)
      */
-    public void setCallback( /* SoftCodec. */ SoftCodec.Callback cb,  Handler handler) {
+    public void setCallback( /* SoftCodec. */ SoftCodec.Callback cb, Handler handler) {
         if (cb != null) {
             synchronized (mListenerLock) {
                 EventHandler newHandler = getEventHandlerOn(handler, mCallbackHandler);
@@ -1132,6 +1151,7 @@ public final class SoftCodec {
      * looper.
      * <p>
      * Same as {@link #setCallback(SoftCodec.Callback, Handler)} with handler set to null.
+     *
      * @param cb The callback that will run.  Use {@code null} to clear a previously
      *           set callback (before {@link #configure configure} is called and run
      *           in synchronous mode).
@@ -1155,18 +1175,17 @@ public final class SoftCodec {
          * render timing samples, and can be significantly delayed and batched. Some frames may have
          * been rendered even if there was no callback generated.
          *
-         * @param codec the SoftCodec instance
+         * @param codec              the SoftCodec instance
          * @param presentationTimeUs the presentation time (media time) of the frame rendered.
-         *          This is usually the same as specified in {@link #queueInputBuffer}; however,
-         *          some codecs may alter the media time by applying some time-based transformation,
-         *          such as frame rate conversion. In that case, presentation time corresponds
-         *          to the actual output frame rendered.
-         * @param nanoTime The system time when the frame was rendered.
-         *
+         *                           This is usually the same as specified in {@link #queueInputBuffer}; however,
+         *                           some codecs may alter the media time by applying some time-based transformation,
+         *                           such as frame rate conversion. In that case, presentation time corresponds
+         *                           to the actual output frame rendered.
+         * @param nanoTime           The system time when the frame was rendered.
          * @see System#nanoTime
          */
         public void onFrameRendered(
-                 SoftCodec codec, long presentationTimeUs, long nanoTime);
+                SoftCodec codec, long presentationTimeUs, long nanoTime);
     }
 
     /**
@@ -1180,12 +1199,12 @@ public final class SoftCodec {
      * been rendered even if there was no callback generated.
      *
      * @param listener the callback that will be run
-     * @param handler the callback will be run on the handler's thread. If {@code null},
-     *           the callback will be run on the default thread, which is the looper
-     *           from which the codec was created, or a new thread if there was none.
+     * @param handler  the callback will be run on the handler's thread. If {@code null},
+     *                 the callback will be run on the default thread, which is the looper
+     *                 from which the codec was created, or a new thread if there was none.
      */
     public void setOnFrameRenderedListener(
-             SoftCodec.OnFrameRenderedListener listener,  Handler handler) {
+            SoftCodec.OnFrameRenderedListener listener, Handler handler) {
         synchronized (mListenerLock) {
             mOnFrameRenderedListener = listener;
             if (listener != null) {
@@ -1204,7 +1223,7 @@ public final class SoftCodec {
     private native void native_enableOnFrameRenderedListener(boolean enable);
 
     private EventHandler getEventHandlerOn(
-             Handler handler,  EventHandler lastHandler) {
+            Handler handler, EventHandler lastHandler) {
         if (handler == null) {
             return mEventHandler;
         } else {
@@ -1228,38 +1247,38 @@ public final class SoftCodec {
          * @param codec The SoftCodec object.
          * @param index The index of the available input buffer.
          */
-        public abstract void onInputBufferAvailable( SoftCodec codec, int index);
+        public abstract void onInputBufferAvailable(SoftCodec codec, int index);
 
         /**
          * Called when an output buffer becomes available.
          *
          * @param codec The SoftCodec object.
          * @param index The index of the available output buffer.
-         * @param info Info regarding the available output buffer {@link MediaCodec.BufferInfo}.
+         * @param info  Info regarding the available output buffer {@link MediaCodec.BufferInfo}.
          */
         public abstract void onOutputBufferAvailable(
-                 SoftCodec codec, int index,  MediaCodec.BufferInfo info);
+                SoftCodec codec, int index, MediaCodec.BufferInfo info);
 
         /**
          * Called when the SoftCodec encountered an error
          *
          * @param codec The SoftCodec object.
-         * @param e The {@link SoftCodec.CodecException} object describing the error.
+         * @param e     The {@link SoftCodec.CodecException} object describing the error.
          */
-        public abstract void onError( SoftCodec codec,  SoftCodec.CodecException e);
+        public abstract void onError(SoftCodec codec, SoftCodec.CodecException e);
 
         /**
          * Called when the output format has changed
          *
-         * @param codec The SoftCodec object.
+         * @param codec  The SoftCodec object.
          * @param format The new output format.
          */
         public abstract void onOutputFormatChanged(
-                 SoftCodec codec,  MediaFormat format);
+                SoftCodec codec, MediaFormat format);
     }
 
     private void postEventFromNative(
-            int what, int arg1, int arg2,  Object obj) {
+            int what, int arg1, int arg2, Object obj) {
         synchronized (mListenerLock) {
             EventHandler handler = mEventHandler;
             if (what == EVENT_CALLBACK) {
@@ -1281,7 +1300,7 @@ public final class SoftCodec {
     private static native void native_init();
 
     private native void native_setup(
-             String name, boolean nameIsType, boolean encoder);
+            String name, boolean nameIsType, boolean encoder);
 
     private native void native_finalize();
 

@@ -273,7 +273,7 @@ namespace android {
     }
 
     int SoftCode::configure(jobjectArray keys, jobjectArray values, jobject surface, jint flags) {
-        return 0;
+        return RESULT_OK;
     }
 
     int SoftCode::setCallback(jobject callback) {

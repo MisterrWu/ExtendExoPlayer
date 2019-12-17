@@ -24,8 +24,6 @@ namespace android {
         bool mEncoder;
         AVCodec* mCodec;
         AVCodecContext* mCodecCtx;
-        AVCodecParserContext *mParser;
-        bool isDecode = false;
 
         int decode(AVPacket *pPacket);
 

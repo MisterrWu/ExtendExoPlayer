@@ -30,6 +30,7 @@ public class NativeTestActivity extends Activity {
     private static final String DATA = "data";
 
     private String videoPath;
+    private boolean isLogArray = false;
 
     public static void start(Context context, String path) {
         Intent intent = new Intent(context, NativeTestActivity.class);
@@ -71,12 +72,11 @@ public class NativeTestActivity extends Activity {
         for (int i = 0; i < extractor.getTrackCount(); i++) {
             MediaFormat format = extractor.getTrackFormat(i);
             String mime = format.getString(MediaFormat.KEY_MIME);
-            Log.e("SoftCodec", "doInit: " + format.toString());
             if (mime.startsWith("video/")) {
                 extractor.selectTrack(i); // 选择视频数据
                 try {
                     codec = CodecImpl.createByCodecName(mime,false);
-                    //codec.configure(format, null, 0);
+                    codec.configure(format, null, 0);
                     codec.start();
                     Log.e(TAG, "start..... ");
                 } catch (Exception e) {
@@ -98,6 +98,7 @@ public class NativeTestActivity extends Activity {
             Log.e(TAG, "dequeueInputBuffer inIndex " + inIndex);
             if (inIndex >= 0) {
                 ByteBuffer buffer = codec.getInputBuffer(inIndex);
+
                 if(buffer != null) {
                     Log.e(TAG, "dequeueInputBuffer capacity " + buffer.capacity() + ",position "+buffer.limit());
                     int sampleSize = extractor.readSampleData(buffer, 0);
@@ -110,9 +111,6 @@ public class NativeTestActivity extends Activity {
                         codec.queueInputBuffer(inIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
                         isEOS = true;
                     } else {
-                        /*byte[] data = new byte[sampleSize];
-                        buffer.get(data, 0, data.length);
-                        logArray(data);*/
                         codec.queueInputBuffer(inIndex, 0, sampleSize, extractor.getSampleTime(), 0);
                         extractor.advance();
                     }
@@ -159,7 +157,7 @@ public class NativeTestActivity extends Activity {
             builder.append(data[i]).append(i != data.length -1 ? ",":"");
         }
         builder.append("]");
-        Log.e(TAG, "logArray: " + builder.toString());
+        Log.e("SoftCodec", "logArray: " + builder.toString());
     }
 
     private void doRelease() {
