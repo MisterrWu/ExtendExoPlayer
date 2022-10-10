@@ -404,7 +404,7 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
      * <p>
      * This method should be called when it is no longer desirable for the
      * GLTextureView to continue rendering, such as in response to
-     * {@link android.app.Activity#onStop Activity.onStop}.
+     * .
      * <p>
      * Must not be called before a renderer has been set.
      */
@@ -417,7 +417,7 @@ public class GLTextureView extends TextureView implements TextureView.SurfaceTex
      * is the counterpart to {@link #onPause()}.
      * <p>
      * This method should typically be called in
-     * {@link android.app.Activity#onStart Activity.onStart}.
+     * .
      * <p>
      * Must not be called before a renderer has been set.
      */

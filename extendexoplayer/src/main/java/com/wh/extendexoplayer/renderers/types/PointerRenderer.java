@@ -3,11 +3,11 @@ package com.wh.extendexoplayer.renderers.types;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 
-import com.google.android.exoplayer2.util.GlUtil;
-
 import java.nio.FloatBuffer;
 
 import static com.google.android.exoplayer2.util.GlUtil.checkGlError;
+
+import com.wh.extendexoplayer.GlUtil;
 
 public final class PointerRenderer {
 

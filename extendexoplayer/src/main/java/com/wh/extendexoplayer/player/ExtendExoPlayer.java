@@ -3,16 +3,14 @@ package com.wh.extendexoplayer.player;
 import android.content.Context;
 import android.graphics.Bitmap;
 
-import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.trackselection.TrackSelector;
-import com.google.android.exoplayer2.video.VideoListener;
+import com.google.android.exoplayer2.video.VideoSize;
 import com.wh.extendexoplayer.renderers.NormalRectRenderer;
 import com.wh.extendexoplayer.widget.RendererView;
 
-public abstract class ExtendExoPlayer implements Player.EventListener, VideoListener {
+public abstract class ExtendExoPlayer implements Player.Listener {
 
     private static final int PLAY_STATE_STOP = 1;
     private static final int PLAY_STATE_PREPARED = 2;
@@ -31,17 +29,15 @@ public abstract class ExtendExoPlayer implements Player.EventListener, VideoList
     ExtendExoPlayer(RendererView rendererView, boolean isFitXY) {
         Context context = rendererView.getContext();
         //创建轨道选择器实例
-        DefaultTrackSelector trackSelector = new DefaultTrackSelector();
-        exoPlayer = createExoPlayer(context, trackSelector);
+        exoPlayer = createExoPlayer(context);
         exoPlayer.addListener(this);
-        exoPlayer.addVideoListener(this);
 
         renderer = new NormalRectRenderer(isFitXY);
         rendererView.setRenderer(renderer);
-        renderer.setVideoComponent(exoPlayer.getVideoComponent());
+        renderer.setVideoComponent(exoPlayer);
     }
 
-    protected abstract SimpleExoPlayer createExoPlayer(Context context, TrackSelector trackSelector);
+    protected abstract SimpleExoPlayer createExoPlayer(Context context);
 
     public void setFirstBitmap(Bitmap bitmap) {
         renderer.setFirstBitmap(bitmap);
@@ -69,7 +65,6 @@ public abstract class ExtendExoPlayer implements Player.EventListener, VideoList
 
     public void release() {
         exoPlayer.removeListener(this);
-        exoPlayer.removeVideoListener(this);
         exoPlayer.release();
     }
 
@@ -86,8 +81,8 @@ public abstract class ExtendExoPlayer implements Player.EventListener, VideoList
     }
 
     public boolean isPlaying() {
-        if (exoPlayer.getPlaybackState() == PLAY_STATE_STOP
-                || exoPlayer.getPlaybackState() == PLAY_STATE_COMPLETE) {
+        if (exoPlayer.getPlaybackState() == Player.STATE_IDLE
+                || exoPlayer.getPlaybackState() == Player.STATE_ENDED) {
             return false;
         }
         return exoPlayer.getPlayWhenReady();
@@ -115,16 +110,16 @@ public abstract class ExtendExoPlayer implements Player.EventListener, VideoList
     }
 
     @Override
-    public void onPlayerError(ExoPlaybackException error) {
+    public void onPlayerError(PlaybackException error) {
         if (onErrorListener != null) {
             onErrorListener.onError(this, error);
         }
     }
 
     @Override
-    public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
+    public void onVideoSizeChanged(VideoSize videoSize) {
         if (onVideoSizeChangedListener != null) {
-            onVideoSizeChangedListener.onVideoSizeChanged(this, width, height, unappliedRotationDegrees, pixelWidthHeightRatio);
+            onVideoSizeChangedListener.onVideoSizeChanged(this, videoSize.width, videoSize.height, videoSize.unappliedRotationDegrees, videoSize.pixelWidthHeightRatio);
         }
     }
 
@@ -156,7 +151,7 @@ public abstract class ExtendExoPlayer implements Player.EventListener, VideoList
     }
 
     public interface OnErrorListener {
-        void onError(ExtendExoPlayer player, ExoPlaybackException error);
+        void onError(ExtendExoPlayer player, PlaybackException error);
     }
 
     public void setOnVideoSizeChangedListener(OnVideoSizeChangedListener l) {

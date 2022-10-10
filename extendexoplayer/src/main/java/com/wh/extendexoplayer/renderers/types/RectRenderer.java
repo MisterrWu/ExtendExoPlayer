@@ -1,27 +1,25 @@
 package com.wh.extendexoplayer.renderers.types;
 
+import static com.google.android.exoplayer2.util.GlUtil.checkGlError;
+
 import android.graphics.SurfaceTexture;
 import android.media.MediaPlayer;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
-import android.opengl.Matrix;
 import android.util.Log;
 
-import com.google.android.exoplayer2.util.GlUtil;
-import com.google.android.exoplayer2.video.VideoListener;
+import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.video.VideoSize;
+import com.wh.extendexoplayer.GlUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.google.android.exoplayer2.util.GlUtil.checkGlError;
-
-public final class RectRenderer implements VideoListener {
+public final class RectRenderer implements Player.Listener {
 
     private final String TAG = "RectRenderer";
     private final AtomicBoolean frameAvailable;
@@ -202,7 +200,9 @@ public final class RectRenderer implements VideoListener {
     }
 
     @Override
-    public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees, float pixelWidthHeightRatio) {
+    public void onVideoSizeChanged(VideoSize videoSize) {
+        int width = videoSize.width;
+        int height = videoSize.height;
         Log.e(TAG, "onVideoSizeChanged: width " + width + ",height " + height);
         this.videoWidth = width;
         this.videoHeight = height;

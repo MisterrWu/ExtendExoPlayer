@@ -8,10 +8,12 @@ import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.FormatHolder;
 import com.google.android.exoplayer2.SeekParameters;
 import com.google.android.exoplayer2.decoder.DecoderInputBuffer;
+import com.google.android.exoplayer2.offline.StreamKey;
 import com.google.android.exoplayer2.source.MediaPeriod;
 import com.google.android.exoplayer2.source.SampleStream;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
+import com.google.android.exoplayer2.trackselection.ExoTrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.util.MimeTypes;
 import com.google.android.exoplayer2.util.Util;
@@ -80,7 +82,7 @@ final class P2pMediaPeriod implements MediaPeriod, ReceiveDataListener {
     }
 
     @Override
-    public long selectTracks(TrackSelection[] selections, boolean[] mayRetainStreamFlags, SampleStream[] streams, boolean[] streamResetFlags, long positionUs) {
+    public long selectTracks(ExoTrackSelection[] selections, boolean[] mayRetainStreamFlags, SampleStream[] streams, boolean[] streamResetFlags, long positionUs) {
         for (int i = 0; i < selections.length; i++) {
             if (streams[i] == null && selections[i] != null) {
                 TrackSelection selection = selections[i];
@@ -91,7 +93,6 @@ final class P2pMediaPeriod implements MediaPeriod, ReceiveDataListener {
         Log.e(TAG, TAG + " selectTracks");
         return positionUs;
     }
-
 
     @Override
     public void discardBuffer(long positionUs, boolean toKeyframe) {
@@ -153,6 +154,11 @@ final class P2pMediaPeriod implements MediaPeriod, ReceiveDataListener {
     public boolean continueLoading(long positionUs) {
         Log.e(TAG, TAG + "continueLoading");
         return true;
+    }
+
+    @Override
+    public boolean isLoading() {
+        return false;
     }
 
     @Override
@@ -253,8 +259,7 @@ final class P2pMediaPeriod implements MediaPeriod, ReceiveDataListener {
         }
 
         @Override
-        public int readData(FormatHolder formatHolder, DecoderInputBuffer buffer,
-                            boolean formatRequired) {
+        public int readData(FormatHolder formatHolder, DecoderInputBuffer buffer, int readFlags) {
             if (mTrackGroup == null || mTrackGroup.length <= 0
                     || mTrackGroup.getFormat(0) == null) {
                 return C.RESULT_NOTHING_READ;

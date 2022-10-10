@@ -4,14 +4,14 @@ import android.graphics.Bitmap;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 
-import com.google.android.exoplayer2.util.GlUtil;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 import static com.google.android.exoplayer2.util.GlUtil.checkGlError;
+
+import com.wh.extendexoplayer.GlUtil;
 
 public class BitmapRenderer {
 

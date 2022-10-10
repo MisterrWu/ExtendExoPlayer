@@ -3,12 +3,10 @@ package com.wh.extendexoplayer.player;
 import android.content.Context;
 import android.net.Uri;
 
-import com.google.android.exoplayer2.DefaultRenderersFactory;
-import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
-import com.google.android.exoplayer2.trackselection.TrackSelector;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 import com.wh.extendexoplayer.widget.RendererView;
@@ -25,8 +23,8 @@ public final class DefaultExoPlayer extends ExtendExoPlayer {
     }
 
     @Override
-    protected SimpleExoPlayer createExoPlayer(Context context, TrackSelector trackSelector) {
-        return ExoPlayerFactory.newSimpleInstance(context, new DefaultRenderersFactory(context), trackSelector);
+    protected SimpleExoPlayer createExoPlayer(Context context) {
+        return new SimpleExoPlayer.Builder(context).build();
     }
 
     public void seekTo(long msec) {
@@ -44,13 +42,13 @@ public final class DefaultExoPlayer extends ExtendExoPlayer {
     public void prepareSource(String path) {
         Uri videoUri = Uri.parse(path);
         MediaSource videoSource = new ProgressiveMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(videoUri);
+                .createMediaSource(MediaItem.fromUri(videoUri));
         exoPlayer.prepare(videoSource);
     }
 
     public void prepareSource(Uri videoUri) {
         MediaSource videoSource = new ProgressiveMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(videoUri);
+                .createMediaSource(MediaItem.fromUri(videoUri));
         exoPlayer.prepare(videoSource);
     }
 

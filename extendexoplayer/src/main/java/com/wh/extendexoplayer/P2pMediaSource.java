@@ -2,6 +2,8 @@ package com.wh.extendexoplayer;
 
 import android.util.Log;
 
+import com.google.android.exoplayer2.MediaItem;
+import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.source.BaseMediaSource;
 import com.google.android.exoplayer2.source.MediaPeriod;
 import com.google.android.exoplayer2.source.SinglePeriodTimeline;
@@ -28,13 +30,28 @@ public final class P2pMediaSource extends BaseMediaSource implements ReceiveData
     @Override
     protected void prepareSourceInternal(TransferListener mediaTransferListener) {
         refreshSourceInfo(new SinglePeriodTimeline(
-                Integer.MAX_VALUE, false, /* isDynamic= */ false, null),null);
+                Long.MAX_VALUE, false, /* isDynamic= */ false,false, null, MediaItem.EMPTY));
         Log.e(TAG, TAG + " prepareSourceInternal");
     }
 
     @Override
     protected void releaseSourceInternal() {
         Log.e(TAG, TAG + " releaseSourceInternal");
+    }
+
+    @Override
+    public Timeline getInitialTimeline() {
+        return super.getInitialTimeline();
+    }
+
+    @Override
+    public boolean isSingleWindow() {
+        return super.isSingleWindow();
+    }
+
+    @Override
+    public MediaItem getMediaItem() {
+        return MediaItem.EMPTY;
     }
 
     @Override

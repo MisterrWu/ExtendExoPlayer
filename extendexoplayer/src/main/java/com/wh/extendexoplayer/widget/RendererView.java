@@ -4,6 +4,7 @@ import android.content.Context;
 import android.media.MediaPlayer;
 import android.view.MotionEvent;
 
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -102,7 +103,7 @@ public interface RendererView {
 
         void onDetachedFromWindow();
 
-        void setVideoComponent(Player.VideoComponent newVideoComponent);
+        void setVideoComponent(ExoPlayer newVideoComponent);
 
         void addOnVideoSizeChangedListener(MediaPlayer.OnVideoSizeChangedListener listener);
     }

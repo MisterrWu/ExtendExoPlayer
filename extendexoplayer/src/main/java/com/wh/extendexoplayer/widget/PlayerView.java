@@ -8,10 +8,9 @@ import android.view.SurfaceView;
 import android.view.TextureView;
 
 import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
@@ -102,12 +101,7 @@ public final class PlayerView {
     public void setOnCompletionListener(MediaPlayer.OnCompletionListener listener) {
     }
 
-    private Player.EventListener eventListener = new Player.EventListener() {
-        @Override
-        public void onTimelineChanged(Timeline timeline, Object manifest, int reason) {
-
-        }
-    };
+    private Player.Listener eventListener = new Player.Listener() {};
 
     public void onResume(boolean isPlay) {
         if (playerWrapper != null && isPlay) {
@@ -131,7 +125,7 @@ public final class PlayerView {
             //创建轨道选择器实例
             DefaultTrackSelector trackSelector = new DefaultTrackSelector();
             //创建播放器
-            exoPlayer = ExoPlayerFactory.newSimpleInstance(context, trackSelector);
+            exoPlayer = new SimpleExoPlayer.Builder(context).build();
             dataSourceFactory = new DefaultDataSourceFactory(context,
                     Util.getUserAgent(context, "ExoPlayer"));
         }
@@ -140,7 +134,7 @@ public final class PlayerView {
             //传入Uri、加载数据的工厂、解析数据的工厂，就能创建出MediaSource
             Uri mp4VideoUri = Uri.parse(videoPath);
             MediaSource videoSource = new ProgressiveMediaSource.Factory(dataSourceFactory)
-                    .createMediaSource(mp4VideoUri);
+                    .createMediaSource(MediaItem.fromUri(mp4VideoUri));
             exoPlayer.setRepeatMode(Player.REPEAT_MODE_ALL);
             exoPlayer.prepare(videoSource);
         }
@@ -234,7 +228,7 @@ public final class PlayerView {
                 PlayerView playerView = new PlayerView();
                 mRendererView.setRenderer(mRenderer);
                 ExoPlayerWrapper wrapper = createExoPlayer(mRendererView.getContext());
-                mRenderer.setVideoComponent(wrapper.exoPlayer.getVideoComponent());
+                mRenderer.setVideoComponent(wrapper.exoPlayer);
                 playerView.setExoPlayerWrapper(wrapper);
                 return playerView;
             }

@@ -23,7 +23,7 @@ import android.opengl.Matrix;
 import android.view.Display;
 import android.view.Surface;
 
-import com.google.android.exoplayer2.video.spherical.FrameRotationQueue;
+import com.wh.extendexoplayer.FrameRotationQueue;
 
 
 /**

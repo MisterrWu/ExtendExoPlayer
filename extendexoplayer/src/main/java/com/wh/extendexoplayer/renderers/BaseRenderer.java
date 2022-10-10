@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.Surface;
 
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
 import com.wh.extendexoplayer.widget.RendererView;
 
@@ -16,7 +17,7 @@ public abstract class BaseRenderer implements RendererView.Renderer {
 
     private SurfaceTexture surfaceTexture;
     private Surface surface;
-    private Player.VideoComponent videoComponent;
+    private ExoPlayer videoComponent;
     final Handler mainHandler;
 
     BaseRenderer() {
@@ -49,7 +50,7 @@ public abstract class BaseRenderer implements RendererView.Renderer {
     }
 
     @Override
-    public final void setVideoComponent(Player.VideoComponent newVideoComponent) {
+    public final void setVideoComponent(ExoPlayer newVideoComponent) {
         if (newVideoComponent == videoComponent) {
             return;
         }
@@ -66,11 +67,11 @@ public abstract class BaseRenderer implements RendererView.Renderer {
         }
     }
 
-    protected void setupNewVideoComponent(Player.VideoComponent newVideoComponent){
+    protected void setupNewVideoComponent(ExoPlayer newVideoComponent){
         newVideoComponent.setVideoSurface(surface);
     }
 
-    protected void setupOldVideoComponent(Player.VideoComponent oldVideoComponent) {}
+    protected void setupOldVideoComponent(ExoPlayer oldVideoComponent) {}
 
     private static void releaseSurface(
             SurfaceTexture oldSurfaceTexture, Surface oldSurface) {

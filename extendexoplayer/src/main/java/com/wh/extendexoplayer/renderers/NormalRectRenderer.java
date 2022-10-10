@@ -5,6 +5,7 @@ import android.graphics.SurfaceTexture;
 import android.media.MediaPlayer;
 import android.opengl.GLES20;
 
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.Player;
 import com.wh.extendexoplayer.renderers.types.BitmapRenderer;
 import com.wh.extendexoplayer.renderers.types.RectRenderer;
@@ -73,16 +74,16 @@ public class NormalRectRenderer extends BaseRenderer {
     }
 
     @Override
-    protected void setupOldVideoComponent(Player.VideoComponent oldVideoComponent) {
+    protected void setupOldVideoComponent(ExoPlayer oldVideoComponent) {
         if (oldVideoComponent != null) {
-            oldVideoComponent.removeVideoListener(rectRenderer);
+            oldVideoComponent.removeListener(rectRenderer);
         }
     }
 
     @Override
-    protected void setupNewVideoComponent(Player.VideoComponent newVideoComponent) {
+    protected void setupNewVideoComponent(ExoPlayer newVideoComponent) {
         if (newVideoComponent != null) {
-            newVideoComponent.addVideoListener(rectRenderer);
+            newVideoComponent.addListener(rectRenderer);
         }
     }
 

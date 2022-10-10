@@ -2,13 +2,10 @@ package com.wh.extendexoplayer.player;
 
 import android.content.Context;
 
-import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.trackselection.TrackSelector;
 import com.wh.extendexoplayer.MediaInfoChangeListener;
 import com.wh.extendexoplayer.MediaType;
 import com.wh.extendexoplayer.P2pMediaSource;
-import com.wh.extendexoplayer.P2pRenderersFactory;
 import com.wh.extendexoplayer.ReceiveDataListener;
 import com.wh.extendexoplayer.widget.RendererView;
 
@@ -24,8 +21,8 @@ public final class StreamExoPlayer extends ExtendExoPlayer{
     }
 
     @Override
-    protected SimpleExoPlayer createExoPlayer(Context context, TrackSelector trackSelector) {
-        return ExoPlayerFactory.newSimpleInstance(context, new P2pRenderersFactory(context), trackSelector);
+    protected SimpleExoPlayer createExoPlayer(Context context) {
+        return new SimpleExoPlayer.Builder(context).build();
     }
 
     private void setMediaTypes(List<MediaType> mediaTypes) {
